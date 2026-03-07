@@ -49,9 +49,7 @@ export default function InvoicesList() {
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Invoice History</h3>
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                    <Plus className="mr-2 h-4 w-4" /> Create Invoice
-                </Button>
+                <InvoiceForm onSuccess={fetchInvoices} />
             </div>
 
             <div className="rounded-md border bg-white">

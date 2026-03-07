@@ -9,7 +9,8 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+// Using CustomerForm component to handle add functionality
+import CustomerForm from '@/components/CustomerForm';
 
 interface Customer {
     id: number;
@@ -45,9 +46,7 @@ export default function CustomersList() {
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Customer List</h3>
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                    <Plus className="mr-2 h-4 w-4" /> Add Customer
-                </Button>
+                <CustomerForm onSuccess={fetchCustomers} />
             </div>
 
             <div className="rounded-md border bg-white">
