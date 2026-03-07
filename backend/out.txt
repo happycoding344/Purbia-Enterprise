@@ -1,0 +1,7 @@
+/home/u678926284/domains/purbiaenterprise.com/public_html/auth
+total 20
+drwxr-xr-x 2 u678926284 o1007430011 4096 Mar  7 09:35 .
+drwxr-xr-x 8 u678926284 o1007430011 4096 Mar  7 09:34 ..
+-rw-r--r-- 1 u678926284 o1007430011  815 Mar  7 09:35 install.txt
+-rw-r--r-- 1 u678926284 o1007430011   63 Mar  7 09:35 out.txt
+-rw-r--r-- 1 u678926284 o1007430011   35 Mar  7 09:35 version.txt

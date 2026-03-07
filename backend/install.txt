@@ -1,0 +1,11 @@
+Creating a "laravel/laravel" project at "./"
+
+In CreateProjectCommand.php line 369:
+                                               
+  Project directory "/home/u678926284/domains  
+  /purbiaenterprise.com/public_html/auth/." i  
+  s not empty.                                 
+                                               
+
+create-project [-s|--stability STABILITY] [--prefer-source] [--prefer-dist] [--prefer-install PREFER-INSTALL] [--repository REPOSITORY] [--repository-url REPOSITORY-URL] [--add-repository] [--dev] [--no-dev] [--no-custom-installers] [--no-scripts] [--no-progress] [--no-secure-http] [--keep-vcs] [--remove-vcs] [--no-install] [--no-audit] [--audit-format AUDIT-FORMAT] [--ignore-platform-req IGNORE-PLATFORM-REQ] [--ignore-platform-reqs] [--ask] [--] [<package> [<directory> [<version>]]]
+
