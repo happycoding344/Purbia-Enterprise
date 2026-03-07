@@ -1,12 +1,15 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import CustomersList from '@/components/CustomersList';
+import InvoicesList from '@/components/InvoicesList';
 
 export default function Dashboard() {
     const { user, logout } = useAuth();
 
     return (
-        <div className="min-h-screen bg-gray-100 text-gray-900 font-sans">
+        <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
             {/* Header Navbar */}
             <header className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:flex sm:items-center sm:justify-between px-6 py-4">
                 <div className="flex items-center space-x-4">
@@ -26,26 +29,27 @@ export default function Dashboard() {
                     <h3 className="text-2xl font-semibold leading-6 text-gray-900">Dashboard Overview</h3>
                 </div>
 
-                {/* Dashboard Stats / Grid Placeholder */}
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5 p-6">
-                        <dt className="truncate text-sm font-medium text-gray-500">Total Invoices</dt>
-                        <dd className="mt-2 text-3xl font-semibold tracking-tight text-gray-900">0</dd>
-                    </div>
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5 p-6">
-                        <dt className="truncate text-sm font-medium text-gray-500">Total Customers</dt>
-                        <dd className="mt-2 text-3xl font-semibold tracking-tight text-gray-900">0</dd>
-                    </div>
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5 p-6">
-                        <dt className="truncate text-sm font-medium text-gray-500">Active Trips</dt>
-                        <dd className="mt-2 text-3xl font-semibold tracking-tight text-gray-900">0</dd>
-                    </div>
-                </div>
+                <Tabs defaultValue="invoices" className="w-full mt-8">
+                    <TabsList className="mb-4">
+                        <TabsTrigger value="invoices">Invoices</TabsTrigger>
+                        <TabsTrigger value="customers">Customers</TabsTrigger>
+                        <TabsTrigger value="trips">Trips Logistics</TabsTrigger>
+                    </TabsList>
 
-                {/* Space for future components like Tables */}
-                <div className="mt-8 bg-white shadow-sm ring-1 ring-gray-900/5 rounded-xl p-6">
-                    <p className="text-gray-500 text-center py-10">Data tables will be rendered here...</p>
-                </div>
+                    <TabsContent value="invoices">
+                        <InvoicesList />
+                    </TabsContent>
+
+                    <TabsContent value="customers">
+                        <CustomersList />
+                    </TabsContent>
+
+                    <TabsContent value="trips">
+                        <div className="rounded-md border bg-white p-8 text-center text-gray-500">
+                            Trip tracking components are under development.
+                        </div>
+                    </TabsContent>
+                </Tabs>
             </main>
         </div>
     );
