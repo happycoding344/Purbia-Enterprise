@@ -31,7 +31,6 @@
   --chart-4: 43 74% 66%;
   --chart-5: 27 87% 67%;
 }
-}
 
 * {
   margin: 0;
@@ -44,6 +43,37 @@ body {
   background: #f0f4f8;
   color: #1a202c;
   overflow-x: hidden;
+}
+
+/* ===== Popup / Dialog / Select / Popover - Solid White Backgrounds ===== */
+[data-radix-popper-content-wrapper]>*,
+[role="dialog"],
+[role="listbox"],
+[data-radix-select-viewport],
+[data-radix-collection-item] {
+  background-color: white !important;
+  color: #1a202c !important;
+}
+
+[data-radix-select-viewport] {
+  background-color: white !important;
+}
+
+[data-radix-select-content] {
+  background-color: white !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+[role="option"] {
+  color: #1a202c !important;
+}
+
+[role="option"]:hover,
+[role="option"][data-highlighted] {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
 }
 
 /* Premium Scrollbar */
