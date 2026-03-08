@@ -24,17 +24,14 @@ type LRRecord = {
 };
 
 const BEIL_COLUMNS = [
+    { key: 'vehicle', label: 'Vehicle Number' },
+    { key: 'manifest_no', label: 'Manifest Number' },
     { key: 'inward_time', label: 'Inward Date & Time' },
     { key: 'outward_time', label: 'Outward Date & Time' },
     { key: 'location', label: 'Company/Location' },
-    { key: 'vehicle', label: 'Truck Number' },
     { key: 'lr_no', label: 'LR No.' },
-    { key: 'manifest_no', label: 'Manifest No.' },
-    { key: 'manifest_date', label: 'Manifest Date' },
     { key: 'distance', label: 'Distance (kms)' },
     { key: 'detention_rate', label: 'Rate' },
-    { key: 'detention', label: 'Detention' },
-    { key: 'detention_rate_val', label: 'Detention Rate' },
     { key: 'total_detention_amount', label: 'Detention Amount' },
     { key: 'total_amount', label: 'Total Amount' },
 ];
@@ -45,7 +42,7 @@ const PI_COLUMNS = [
     { key: 'inward_time', label: 'Inward Date & Time' },
     { key: 'outward_time', label: 'Outward Date & Time' },
     { key: 'difference_days', label: 'Difference (Days)' },
-    { key: 'detention_charges', label: 'Detention Charges After 24 hrs' },
+    { key: 'detention_charges', label: 'Detention Charges (After 24h)' },
 ];
 
 export default function PrintLRModule() {

@@ -11,6 +11,7 @@ import {
     ChevronRight, Upload, X, CheckSquare, Square
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { InvoicePrint } from './InvoicePrint';
 
 const INDIAN_STATES = [
     'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana',
@@ -49,6 +50,7 @@ export default function InvoiceModule() {
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
+    const [previewInvoice, setPreviewInvoice] = useState<any>(null);
 
     const [form, setForm] = useState({
         invoice_no: '', invoice_date: format(new Date(), 'yyyy-MM-dd'),
@@ -127,6 +129,40 @@ export default function InvoiceModule() {
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const handlePrintPreview = () => {
+        const invoiceData = {
+            invoice_no: form.invoice_no,
+            invoice_date: form.invoice_date,
+            billing_party: billingParties.find(bp => bp.id === +form.billing_party_id)?.name || '',
+            delivery_address: form.delivery_address,
+            state: INDIAN_STATES[+form.state_id - 1] || '',
+            state_code: form.state_code,
+            gst_number: form.gst_number,
+            po_number: form.po_number,
+            payment_due_date: form.payment_due_date,
+            subject: form.subject,
+            hsn_code: form.hsn_code,
+            items: businessType === 'BEIL' ? items : lrRecords.filter(lr => selectedLRs.includes(lr.id)).map(lr => ({
+                description: `LR No: ${lr.lr_no}, Manifest: ${lr.manifest_no || '-'}`,
+                sac_code: form.hsn_code,
+                qty: 1,
+                unit: 'Trip',
+                unit_rate: lr.total_amount,
+                amount: lr.total_amount,
+                cgst: (lr.total_amount || 0) * 0.09,
+                sgst: (lr.total_amount || 0) * 0.09,
+                total_amount: (lr.total_amount || 0) * 1.18
+            })),
+            total_amount_before_tax: totalAmount,
+            tax_amount: gstAmount,
+            cgst_total: cgstAmount,
+            sgst_total: sgstAmount,
+            grand_total: grandTotal,
+            amount_in_words: amountWords
+        };
+        setPreviewInvoice(invoiceData);
     };
 
     return (
@@ -453,6 +489,9 @@ export default function InvoiceModule() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+                    <Button type="button" variant="outline" onClick={handlePrintPreview} disabled={!form.invoice_no}>
+                        Preview & Print
+                    </Button>
                     <Button type="button" variant="outline">Cancel</Button>
                     <Button type="submit" disabled={submitting}
                         style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', color: 'white', border: 'none', padding: '10px 28px' }}>
@@ -460,6 +499,18 @@ export default function InvoiceModule() {
                     </Button>
                 </div>
             </form>
+
+            <Dialog open={!!previewInvoice} onOpenChange={() => setPreviewInvoice(null)}>
+                <DialogContent style={{ maxWidth: '220mm', maxHeight: '90vh', overflowY: 'auto', padding: 0 }}>
+                    <div className="p-4 bg-gray-100 border-b flex justify-between items-center sticky top-0 z-10 no-print">
+                        <DialogTitle>Invoice Print Preview</DialogTitle>
+                        <Button onClick={() => window.print()}>
+                            <Printer size={16} className="mr-2" /> Print A4 PDF
+                        </Button>
+                    </div>
+                    {previewInvoice && <InvoicePrint invoice={previewInvoice} businessType={businessType} />}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

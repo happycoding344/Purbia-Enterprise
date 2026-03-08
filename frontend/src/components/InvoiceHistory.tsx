@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/axios';
 import { Input } from '@/components/ui/input';
-import { Eye, Trash2, Search, FileText } from 'lucide-react';
+import { Trash2, Search, FileText, Printer } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { InvoicePrint } from './InvoicePrint';
 
 type Invoice = {
     id: number;
@@ -9,7 +12,16 @@ type Invoice = {
     invoice_date: string;
     business_type: 'BEIL' | 'PI';
     billing_party?: { name: string };
+    state?: { name: string };
     total_amount: number;
+    total_amount_words?: string;
+    gst_amount: number;
+    sgst_amount: number;
+    cgst_amount: number;
+    amount: number;
+    hsn_code?: string;
+    items?: any[];
+    lrs?: any[];
     created_at: string;
 };
 
@@ -19,6 +31,7 @@ export default function InvoiceHistory() {
     const [search, setSearch] = useState('');
     const [typeFilter, setTypeFilter] = useState<'ALL' | 'BEIL' | 'PI'>('ALL');
     const [error, setError] = useState('');
+    const [previewInvoice, setPreviewInvoice] = useState<any>(null);
 
     useEffect(() => {
         api.get('/invoices')
@@ -35,8 +48,39 @@ export default function InvoiceHistory() {
 
     const handleDelete = async (id: number) => {
         if (!window.confirm('Delete this invoice?')) return;
-        await api.delete(`/invoices/${id}`);
-        setInvoices(prev => prev.filter(inv => inv.id !== id));
+        try {
+            await api.delete(`/invoices/${id}`);
+            setInvoices(prev => prev.filter(inv => inv.id !== id));
+        } catch (err) {
+            setError('Failed to delete invoice');
+        }
+    };
+
+    const handlePrint = (inv: Invoice) => {
+        // Map backend data to printer format
+        const printData = {
+            ...inv,
+            billing_party: inv.billing_party?.name || (inv as any).billing_party_id,
+            state: inv.state?.name || '',
+            amount_in_words: inv.total_amount_words,
+            grand_total: inv.total_amount,
+            tax_amount: inv.gst_amount,
+            cgst_total: inv.cgst_amount,
+            sgst_total: inv.sgst_amount,
+            total_amount_before_tax: inv.amount,
+            items: inv.business_type === 'BEIL' ? inv.items : inv.lrs?.map((lr: any) => ({
+                description: `LR No: ${lr.lr_no}, Manifest: ${lr.manifest_no || '-'}`,
+                sac_code: inv.hsn_code,
+                qty: 1,
+                unit: 'Trip',
+                unit_rate: lr.total_amount,
+                amount: lr.total_amount,
+                cgst: (lr.total_amount || 0) * 0.09,
+                sgst: (lr.total_amount || 0) * 0.09,
+                total_amount: (lr.total_amount || 0) * 1.18
+            }))
+        };
+        setPreviewInvoice(printData);
     };
 
     if (loading) {
@@ -112,7 +156,7 @@ export default function InvoiceHistory() {
                                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'white'}
                                 >
                                     <td style={{ padding: '12px 16px', fontWeight: 700, color: '#0f172a' }}>{inv.invoice_no}</td>
-                                    <td style={{ padding: '12px 16px', color: '#374151', fontSize: 13 }}>{inv.invoice_date}</td>
+                                    <td style={{ padding: '12px 16px', color: '#374151', fontSize: 13 }}>{new Date(inv.invoice_date).toLocaleDateString()}</td>
                                     <td style={{ padding: '12px 16px' }}>
                                         <span style={{
                                             padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
@@ -131,10 +175,11 @@ export default function InvoiceHistory() {
                                     <td style={{ padding: '12px 16px' }}>
                                         <div style={{ display: 'flex', gap: 6 }}>
                                             <button
+                                                onClick={() => handlePrint(inv)}
                                                 style={{ padding: '6px', borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', color: '#3b82f6' }}
-                                                title="View"
+                                                title="View & Print"
                                             >
-                                                <Eye size={14} />
+                                                <Printer size={14} />
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(inv.id)}
@@ -157,7 +202,7 @@ export default function InvoiceHistory() {
                 {[
                     { label: 'Total Invoices', value: filtered.length, color: '#3b82f6', bg: '#eff6ff' },
                     { label: 'BEIL Invoices', value: filtered.filter(i => i.business_type === 'BEIL').length, color: '#8b5cf6', bg: '#f5f3ff' },
-                    { label: 'Grand Total', value: `₹${filtered.reduce((s, i) => s + (i.total_amount || 0), 0).toLocaleString('en-IN')}`, color: '#059669', bg: '#f0fdf4' },
+                    { label: 'Grand Total', value: `₹${filtered.reduce((s, i) => s + (Number(i.total_amount) || 0), 0).toLocaleString('en-IN')}`, color: '#059669', bg: '#f0fdf4' },
                 ].map(stat => (
                     <div key={stat.label} style={{ background: stat.bg, borderRadius: 12, padding: 16, border: `1px solid ${stat.color}20` }}>
                         <div style={{ fontSize: 12, color: stat.color, fontWeight: 600, marginBottom: 6 }}>{stat.label}</div>
@@ -165,6 +210,18 @@ export default function InvoiceHistory() {
                     </div>
                 ))}
             </div>
+
+            <Dialog open={!!previewInvoice} onOpenChange={() => setPreviewInvoice(null)}>
+                <DialogContent style={{ maxWidth: '220mm', maxHeight: '90vh', overflowY: 'auto', padding: 0 }}>
+                    <div className="p-4 bg-gray-100 border-b flex justify-between items-center sticky top-0 z-10 no-print">
+                        <DialogTitle>Invoice Print Preview</DialogTitle>
+                        <Button onClick={() => window.print()}>
+                            <Printer size={16} className="mr-2" /> Print A4 PDF
+                        </Button>
+                    </div>
+                    {previewInvoice && <InvoicePrint invoice={previewInvoice} businessType={previewInvoice.business_type} />}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

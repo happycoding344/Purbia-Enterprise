@@ -8,8 +8,8 @@ import InvoiceHistory from '@/components/InvoiceHistory';
 import CustomersList from '@/components/CustomersList';
 import {
     FileText, Truck, Receipt, Printer, History,
-    Users, LogOut, Menu, X, ChevronRight,
-    BarChart3, TrendingUp, Package, AlertCircle
+    Users, LogOut, Menu, ChevronRight,
+    BarChart3, TrendingUp, AlertCircle
 } from 'lucide-react';
 
 type ActiveModule =
@@ -71,12 +71,11 @@ export default function Dashboard() {
                 {/* Logo */}
                 <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{
-                            width: 40, height: 40, borderRadius: 12,
-                            background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 18, fontWeight: 800, color: 'white', flexShrink: 0
-                        }}>P</div>
+                        <img
+                            src="https://purbiaenterprise.com/wp-content/uploads/2025/06/cropped-ff-27fe08532e0ec99e1a0f7588968facd9-ff-IMG-20250609-WA00031.jpg"
+                            alt="Logo"
+                            style={{ width: 40, height: 40, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }}
+                        />
                         <div>
                             <div style={{ color: 'white', fontWeight: 700, fontSize: 14, lineHeight: 1.2 }}>Purbia Enterprise</div>
                             <div style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>Logistics Management</div>
@@ -328,5 +327,3 @@ function DashboardHome({ onNavigate }: { onNavigate: (module: ActiveModule) => v
         </div>
     );
 }
-
-type ActiveModule = 'dashboard' | 'lr-preparation' | 'generate-invoice' | 'print-lr' | 'vehicle-master' | 'invoice-history' | 'customers';

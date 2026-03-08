@@ -10,7 +10,7 @@ class InvoiceController extends Controller
 {
     public function index()
     {
-        return response()->json(Invoice::with(['customer', 'items', 'lrs', 'attachments'])->latest()->get());
+        return response()->json(Invoice::with(['customer', 'items', 'lrs', 'attachments', 'billingParty', 'state'])->latest()->get());
     }
 
     public function store(Request $request)
