@@ -3,6 +3,13 @@ name: Build & Deploy to Hostinger
 on:
   push:
     branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  SSH_HOST: 82.25.125.224
+  SSH_PORT: 65002
+  SSH_USER: u678926284
+  DEPLOY_PATH: /home/u678926284/domains/purbiaenterprise.com/public_html/auth
 
 jobs:
   build-and-deploy:
@@ -11,54 +18,55 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: '20.19'
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+      - name: Install frontend dependencies
         working-directory: ./frontend
+        run: npm ci --legacy-peer-deps
 
       - name: Build React App
-        run: npm run build
         working-directory: ./frontend
+        run: npm run build
         env:
           NODE_ENV: production
+          VITE_API_URL: https://auth.purbiaenterprise.com/auth/api
 
-      - name: Install SSH Key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.HOSTINGER_SSH_KEY }}
-          known_hosts: unnecessary
-          if_key_exists: replace
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass
 
-      - name: Add Hostinger to known hosts
-        run: ssh-keyscan -p 65002 82.25.125.224 >> ~/.ssh/known_hosts
-
-      - name: Deploy frontend to Hostinger
+      - name: Deploy frontend dist to Hostinger public folder
         run: |
-          scp -P 65002 -r ./frontend/dist/* \
-            u678926284@82.25.125.224:/home/u678926284/domains/purbiaenterprise.com/public_html/auth/public/
+          sshpass -p "${{ secrets.HOSTINGER_SSH_PASS }}" \
+            scp -P $SSH_PORT -o StrictHostKeyChecking=no -r \
+            ./frontend/dist/* \
+            $SSH_USER@$SSH_HOST:$DEPLOY_PATH/public/
 
-      - name: Deploy backend to Hostinger
+      - name: Deploy backend app directory
         run: |
-          # Sync app controllers and models
-          rsync -avz --delete -e "ssh -p 65002" \
+          sshpass -p "${{ secrets.HOSTINGER_SSH_PASS }}" \
+            rsync -avz --delete -e "ssh -p $SSH_PORT -o StrictHostKeyChecking=no" \
             ./backend/app/ \
-            u678926284@82.25.125.224:/home/u678926284/domains/purbiaenterprise.com/public_html/auth/app/
-          
-          # Sync migrations
-          rsync -avz -e "ssh -p 65002" \
-            ./backend/database/migrations/ \
-            u678926284@82.25.125.224:/home/u678926284/domains/purbiaenterprise.com/public_html/auth/database/migrations/
+            $SSH_USER@$SSH_HOST:$DEPLOY_PATH/app/
 
-      - name: Run Laravel Migrations
+      - name: Deploy backend migrations
         run: |
-          ssh -p 65002 u678926284@82.25.125.224 \
-            "cd /home/u678926284/domains/purbiaenterprise.com/public_html/auth && \
+          sshpass -p "${{ secrets.HOSTINGER_SSH_PASS }}" \
+            rsync -avz -e "ssh -p $SSH_PORT -o StrictHostKeyChecking=no" \
+            ./backend/database/migrations/ \
+            $SSH_USER@$SSH_HOST:$DEPLOY_PATH/database/migrations/
+
+      - name: Run Laravel Migrations and Cache
+        run: |
+          sshpass -p "${{ secrets.HOSTINGER_SSH_PASS }}" \
+            ssh -p $SSH_PORT -o StrictHostKeyChecking=no \
+            $SSH_USER@$SSH_HOST \
+            "cd $DEPLOY_PATH && \
              /usr/bin/php artisan migrate --force && \
              /usr/bin/php artisan config:cache && \
-             /usr/bin/php artisan route:cache"
+             /usr/bin/php artisan route:cache && \
+             echo 'Deployment complete!'"
