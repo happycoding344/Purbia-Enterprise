@@ -10,109 +10,88 @@ class InvoiceController extends Controller
 {
     public function index()
     {
-        // Eager load relationships for the dashboard
-        $invoices = Invoice::with(['customer', 'items', 'trips'])->latest()->get();
-        return response()->json($invoices);
+        return response()->json(Invoice::with(['customer', 'items', 'lrs', 'attachments'])->latest()->get());
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'invoice_no' => 'required|string|unique:invoices,invoice_no',
+        $request->validate([
+            'business_type' => 'required|string|in:BEIL,PI',
+            'invoice_no' => 'required|string|max:255|unique:invoices,invoice_no',
             'invoice_date' => 'required|date',
-            'po_number' => 'nullable|string',
-            'state_name' => 'nullable|string',
+            'billing_party_id' => 'required|exists:billing_parties,id',
+            'customer_id' => 'nullable|exists:customers,id',
+            'delivery_address' => 'nullable|string',
+            'state_id' => 'required|exists:states,id',
             'state_code' => 'nullable|string',
-            'due_date' => 'nullable|date',
-            'purbia_gstin' => 'nullable|string',
-            'purbia_pan' => 'nullable|string',
-            'bank_name' => 'nullable|string',
-            'branch' => 'nullable|string',
-            'ifsc' => 'nullable|string',
-            'account_number' => 'nullable|string',
+            'gst_number' => 'nullable|string',
+            'po_number' => 'nullable|string',
+            'payment_due_date' => 'nullable|date',
+            'subject' => 'nullable|string',
+            'hsn_code' => 'nullable|string',
 
-            'items' => 'nullable|array',
+            // BEIL specific items
+            'items' => 'required_if:business_type,BEIL|array',
             'items.*.description' => 'required|string',
             'items.*.sac_code' => 'nullable|string',
             'items.*.qty' => 'required|numeric',
-            'items.*.unit' => 'nullable|string',
+            'items.*.unit' => 'required|string',
             'items.*.rate' => 'required|numeric',
+            'items.*.cgst' => 'nullable|numeric',
+            'items.*.sgst' => 'nullable|numeric',
 
-            'trips' => 'nullable|array',
-            'trips.*.inward_date' => 'nullable|date',
-            'trips.*.outward_date' => 'nullable|date',
-            'trips.*.company' => 'nullable|string',
-            'trips.*.location' => 'nullable|string',
-            'trips.*.truck_no' => 'nullable|string',
-            'trips.*.distance' => 'nullable|numeric',
-            'trips.*.rate' => 'nullable|numeric',
-            'trips.*.detention' => 'nullable|numeric',
-            'trips.*.detention_rate' => 'nullable|numeric',
+            // PI specific LRs
+            'lr_ids' => 'required_if:business_type,PI|array',
+            'lr_ids.*' => 'exists:lrs,id',
+
+            // Calculations
+            'amount' => 'required|numeric',
+            'gst_amount' => 'required|numeric',
+            'sgst_amount' => 'required|numeric',
+            'cgst_amount' => 'required|numeric',
+            'total_amount' => 'required|numeric',
+            'total_amount_words' => 'nullable|string',
+
+            'attachments.*' => 'nullable|file|max:51200',
         ]);
 
-        return DB::transaction(function () use ($validated) {
-            $invoiceData = collect($validated)->except(['items', 'trips'])->toArray();
+        return DB::transaction(function () use ($request) {
+            $invoice = Invoice::create($request->except(['items', 'lr_ids', 'attachments']));
 
-            // Auto calculating totals based on items
-            $subtotal = 0;
-            $cgstTotal = 0;
-            $sgstTotal = 0;
-
-            $itemsData = [];
-            if (isset($validated['items'])) {
-                foreach ($validated['items'] as $item) {
-                    $amount = $item['qty'] * $item['rate'];
-                    $cgst = $amount * 0.09; // 9%
-                    $sgst = $amount * 0.09; // 9%
-                    $total = $amount + $cgst + $sgst;
-
-                    $subtotal += $amount;
-                    $cgstTotal += $cgst;
-                    $sgstTotal += $sgst;
-
-                    $item['amount'] = $amount;
-                    $item['cgst'] = $cgst;
-                    $item['sgst'] = $sgst;
-                    $item['total'] = $total;
-                    $itemsData[] = $item;
+            // Handle BEIL Items
+            if ($request->business_type === 'BEIL') {
+                foreach ($request->items as $item) {
+                    $item['amount'] = $item['qty'] * $item['rate'];
+                    $item['total'] = $item['amount'] + ($item['cgst'] ?? 0) + ($item['sgst'] ?? 0);
+                    $invoice->items()->create($item);
                 }
             }
 
-            $tripsData = [];
-            if (isset($validated['trips'])) {
-                foreach ($validated['trips'] as $trip) {
-                    $distanceAmount = ($trip['distance'] ?? 0) * ($trip['rate'] ?? 0);
-                    $detentionAmount = ($trip['detention'] ?? 0) * ($trip['detention_rate'] ?? 0);
-                    $trip['total'] = $distanceAmount + $detentionAmount;
+            // Handle PI LRs
+            if ($request->business_type === 'PI') {
+                $invoice->lrs()->sync($request->lr_ids);
+            }
 
-                    // We assume trips are not typically taxed here, or if they are it needs to be calculated.
-                    // Following the complex WP logic, trips are just added to the line items or calculated separately.
-                    $tripsData[] = $trip;
+            // Handle Attachments
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    $path = $file->store('invoice_attachments', 'public');
+                    $invoice->attachments()->create([
+                        'file_path' => $path,
+                        'original_name' => $file->getClientOriginalName(),
+                        'file_type' => $file->getMimeType(),
+                        'file_size' => $file->getSize(),
+                    ]);
                 }
             }
 
-            $invoiceData['subtotal_amount'] = $subtotal;
-            $invoiceData['cgst_amount'] = $cgstTotal;
-            $invoiceData['sgst_amount'] = $sgstTotal;
-            $invoiceData['grand_total'] = $subtotal + $cgstTotal + $sgstTotal;
-
-            $invoice = Invoice::create($invoiceData);
-
-            if (!empty($itemsData)) {
-                $invoice->items()->createMany($itemsData);
-            }
-            if (!empty($tripsData)) {
-                $invoice->trips()->createMany($tripsData);
-            }
-
-            return response()->json($invoice->load(['items', 'trips', 'customer']), 201);
+            return response()->json($invoice->load(['items', 'lrs', 'attachments']), 201);
         });
     }
 
     public function show(Invoice $invoice)
     {
-        return response()->json($invoice->load(['customer', 'items', 'trips']));
+        return response()->json($invoice->load(['customer', 'items', 'lrs', 'attachments', 'billingParty', 'state']));
     }
 
     public function destroy(Invoice $invoice)

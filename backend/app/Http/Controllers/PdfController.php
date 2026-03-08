@@ -102,22 +102,30 @@ class PdfController extends Controller
 
     public function generateInvoice(Invoice $invoice)
     {
-        $invoice->load(['customer', 'items', 'trips']);
-        $amount_words = $this->numberToIndianWords(round($invoice->grand_total));
+        $invoice->load(['customer', 'items', 'lrs', 'attachments', 'billingParty', 'state']);
 
-        // Note: For a real production app, you would use barryvdh/laravel-dompdf
-        // e.g. $pdf = PDF::loadView('pdf.invoice', compact('invoice', 'amount_words'));
-        // return $pdf->download("invoice-{$invoice->invoice_no}.pdf");
+        $amount_words = $invoice->total_amount_words ?: $this->numberToIndianWords(round((float) $invoice->total_amount));
 
-        // Here we can either render the HTML directly for the frontend to print,
-        // or just return the data required to build the pure-frontend print view.
-        // Returning JSON so the React frontend can render the print view!
+        // For PI Industries, we might need more details from the LRs
+        if ($invoice->business_type === 'PI') {
+            $invoice->lrs->load(['items', 'vehicle', 'fromCity', 'toCity']);
+        }
+
         return response()->json([
             'invoice' => $invoice,
             'amount_words' => $amount_words,
             'company' => [
-                'name' => 'BEIL Infrastructure Ltd',
-                'address' => "GIDC, Dahej, Taluka; Vag\nDistrict - Bharuch GUJRAT - 392130",
+                'BEIL' => [
+                    'name' => 'BEIL Infrastructure Ltd',
+                    'address' => "GIDC, Dahej, Taluka; Vag\nDistrict - Bharuch GUJRAT - 392130",
+                ],
+                'PI' => [
+                    'name' => 'PI Industries Ltd',
+                    'address' => "Plot No. 237, GIDC, Panoli, Dist. Bharuch",
+                ]
+            ][$invoice->business_type] ?? [
+                'name' => 'Purbia Enterprise',
+                'address' => 'GIDC, Panoli',
             ]
         ]);
     }

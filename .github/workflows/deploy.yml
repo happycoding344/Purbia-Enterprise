@@ -1,59 +1,64 @@
-name: Build and Deploy to Hostinger
+name: Build & Deploy to Hostinger
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main, master ]
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: 🚚 Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: ⚙️ Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          
-      - name: ⚙️ Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '20.19'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: 📦 Install Backend Dependencies
-        working-directory: ./backend
-        run: composer install --no-dev --optimize-autoloader
-
-      - name: 📦 Build Frontend
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
         working-directory: ./frontend
+
+      - name: Build React App
+        run: npm run build
+        working-directory: ./frontend
+        env:
+          NODE_ENV: production
+
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          known_hosts: unnecessary
+          if_key_exists: replace
+
+      - name: Add Hostinger to known hosts
+        run: ssh-keyscan -p 65002 82.25.125.224 >> ~/.ssh/known_hosts
+
+      - name: Deploy frontend to Hostinger
         run: |
-          npm ci
-          npm run build
+          scp -P 65002 -r ./frontend/dist/* \
+            u678926284@82.25.125.224:/home/u678926284/domains/purbiaenterprise.com/public_html/auth/public/
 
-      - name: 📂 Merge Frontend Build to Backend Public
-        run: cp -r frontend/dist/* backend/public/
+      - name: Deploy backend to Hostinger
+        run: |
+          # Sync app controllers and models
+          rsync -avz --delete -e "ssh -p 65002" \
+            ./backend/app/ \
+            u678926284@82.25.125.224:/home/u678926284/domains/purbiaenterprise.com/public_html/auth/app/
+          
+          # Sync migrations
+          rsync -avz -e "ssh -p 65002" \
+            ./backend/database/migrations/ \
+            u678926284@82.25.125.224:/home/u678926284/domains/purbiaenterprise.com/public_html/auth/database/migrations/
 
-      - name: 🚀 Sync to Hostinger server via SFTP
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          port: ${{ secrets.PORT }}
-          source: "backend/*"
-          target: "/home/u678926284/domains/purbiaenterprise.com/public_html/auth"
-          strip_components: 1
-
-      - name: 🛠️ Execute Final Post-Deploy Scripts
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          port: ${{ secrets.PORT }}
-          script: |
-            cd /home/u678926284/domains/purbiaenterprise.com/public_html/auth
-            php artisan migrate --force
-            php artisan optimize:clear
+      - name: Run Laravel Migrations
+        run: |
+          ssh -p 65002 u678926284@82.25.125.224 \
+            "cd /home/u678926284/domains/purbiaenterprise.com/public_html/auth && \
+             /usr/bin/php artisan migrate --force && \
+             /usr/bin/php artisan config:cache && \
+             /usr/bin/php artisan route:cache"

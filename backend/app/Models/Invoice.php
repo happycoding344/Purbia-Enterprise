@@ -13,36 +13,49 @@ class Invoice extends Model
 
     protected $fillable = [
         'customer_id',
+        'business_type',
         'invoice_no',
         'invoice_date',
-        'po_number',
-        'state_name',
+        'billing_party_id',
+        'delivery_address',
+        'state_id',
         'state_code',
-        'due_date',
-        'purbia_gstin',
-        'purbia_pan',
-        'bank_name',
-        'branch',
-        'ifsc',
-        'account_number',
-        'subtotal_amount',
-        'cgst_amount',
+        'gst_number',
+        'po_number',
+        'payment_due_date',
+        'subject',
+        'hsn_code',
+        'amount',
+        'gst_amount',
         'sgst_amount',
-        'grand_total',
+        'cgst_amount',
+        'total_amount',
+        'total_amount_words',
     ];
 
     protected $casts = [
         'invoice_date' => 'date',
-        'due_date' => 'date',
-        'subtotal_amount' => 'decimal:2',
-        'cgst_amount' => 'decimal:2',
+        'payment_due_date' => 'date',
+        'amount' => 'decimal:2',
+        'gst_amount' => 'decimal:2',
         'sgst_amount' => 'decimal:2',
-        'grand_total' => 'decimal:2',
+        'cgst_amount' => 'decimal:2',
+        'total_amount' => 'decimal:2',
     ];
 
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function billingParty(): BelongsTo
+    {
+        return $this->belongsTo(BillingParty::class);
+    }
+
+    public function state(): BelongsTo
+    {
+        return $this->belongsTo(State::class);
     }
 
     public function items(): HasMany
@@ -53,5 +66,15 @@ class Invoice extends Model
     public function trips(): HasMany
     {
         return $this->hasMany(Trip::class);
+    }
+
+    public function lrs()
+    {
+        return $this->belongsToMany(Lr::class, 'invoice_lrs');
+    }
+
+    public function attachments()
+    {
+        return $this->hasMany(InvoiceAttachment::class);
     }
 }

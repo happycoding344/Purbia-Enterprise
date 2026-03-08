@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Plus, Download } from 'lucide-react';
+import InvoiceForm from '@/components/InvoiceForm';
 
 interface Invoice {
     id: number;
