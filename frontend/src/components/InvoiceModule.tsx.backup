@@ -4,9 +4,10 @@ import { numberToIndianWords } from '@/lib/numberToWords';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
-    Plus, Trash2, Printer, FileText, Building2,
+    Plus, Trash2, Eye, Download, FileText, Building2,
     ChevronRight, Upload, X, CheckSquare, Square
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -50,8 +51,6 @@ export default function InvoiceModule() {
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
     const [previewInvoice, setPreviewInvoice] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [loadError, setLoadError] = useState('');
 
     const [form, setForm] = useState({
         invoice_no: '', invoice_date: format(new Date(), 'yyyy-MM-dd'),
@@ -61,24 +60,8 @@ export default function InvoiceModule() {
     });
 
     useEffect(() => {
-        const loadData = async () => {
-            try {
-                setLoading(true);
-                const [bpRes, lrRes] = await Promise.all([
-                    api.get('/masters/billing_parties').catch(e => ({ data: [] })),
-                    api.get('/lrs').catch(e => ({ data: [] }))
-                ]);
-
-                setBillingParties(Array.isArray(bpRes.data) ? bpRes.data : []);
-                setLrRecords(Array.isArray(lrRes.data) ? lrRes.data : []);
-                setLoading(false);
-            } catch (err: any) {
-                console.error('Failed to load invoice module data:', err);
-                setLoadError(err.response?.data?.message || 'Failed to load data');
-                setLoading(false);
-            }
-        };
-        loadData();
+        api.get('/masters/billing_parties').then(r => setBillingParties(r.data));
+        api.get('/lrs').then(r => setLrRecords(r.data));
     }, []);
 
     const updateItem = (id: string, field: keyof InvoiceItem, val: string | number) => {
@@ -142,7 +125,6 @@ export default function InvoiceModule() {
             setSuccess(true);
             setTimeout(() => setSuccess(false), 4000);
         } catch (err: any) {
-            console.error('Invoice save error:', err);
             setError(err.response?.data?.message || 'Failed to save invoice.');
         } finally {
             setSubmitting(false);
@@ -182,31 +164,6 @@ export default function InvoiceModule() {
         };
         setPreviewInvoice(invoiceData);
     };
-
-    // Loading state
-    if (loading) {
-        return (
-            <div style={{ padding: 60, textAlign: 'center' }}>
-                <div style={{ fontSize: 16, color: '#64748b', marginBottom: 12 }}>Loading Invoice Module...</div>
-                <div style={{ width: 40, height: 40, border: '3px solid #e2e8f0', borderTopColor: '#3b82f6', borderRadius: '50%', margin: '0 auto', animation: 'spin 1s linear infinite' }}></div>
-            </div>
-        );
-    }
-
-    // Error state
-    if (loadError) {
-        return (
-            <div style={{ padding: 40, textAlign: 'center' }}>
-                <div style={{ fontSize: 18, color: '#ef4444', fontWeight: 600, marginBottom: 12 }}>
-                    ⚠️ Failed to Load Invoice Module
-                </div>
-                <div style={{ padding: 20, background: '#fee2e2', borderRadius: 12, color: '#991b1b', marginBottom: 16 }}>
-                    {loadError}
-                </div>
-                <Button onClick={() => window.location.reload()}>Reload Page</Button>
-            </div>
-        );
-    }
 
     return (
         <div>
@@ -332,9 +289,7 @@ export default function InvoiceModule() {
                     </div>
                 </div>
 
-                {/* Rest of the form... (keeping original code for LR Data, Totals, etc.) */}
-                {/* For brevity, I'm truncating here - the full component would include all sections */}
-
+                {/* LR Data Section */}
                 <div className="form-section">
                     <div className="form-section-title">
                         <FileText size={16} color="#8b5cf6" />
