@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import LRList from '@/components/LRList';
 import VehicleMaster from '@/components/VehicleMaster';
@@ -33,8 +34,22 @@ const navItems = [
 
 export default function Dashboard() {
     const { user, logout } = useAuth();
-    const [activeModule, setActiveModule] = useState<ActiveModule>('dashboard');
+    const navigate = useNavigate();
+    const { module } = useParams();
+    const [activeModule, setActiveModule] = useState<ActiveModule>((module as ActiveModule) || 'dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    useEffect(() => {
+        if (module && module !== activeModule) {
+            setActiveModule(module as ActiveModule);
+        }
+    }, [module, activeModule]);
+
+    const handleModuleChange = (newModule: ActiveModule) => {
+        setActiveModule(newModule);
+        navigate(newModule === 'dashboard' ? '/' : `/${newModule}`);
+        setSidebarOpen(false);
+    };
 
     const sections = [...new Set(navItems.map(item => item.section))];
 
@@ -97,7 +112,7 @@ export default function Dashboard() {
                                     <div
                                         key={item.id}
                                         className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
-                                        onClick={() => { setActiveModule(item.id as ActiveModule); setSidebarOpen(false); }}
+                                        onClick={() => handleModuleChange(item.id as ActiveModule)}
                                     >
                                         <Icon size={16} />
                                         <span>{item.label}</span>
@@ -146,7 +161,7 @@ export default function Dashboard() {
             </aside>
 
             {/* Main Content */}
-            <div className="main-content" style={{ flex: 1 }}>
+            <div className="main-content" style={{ flex: 1, minWidth: 0 }}>
                 {/* Top Header */}
                 <header style={{
                     background: 'white', borderBottom: '1px solid #e2e8f0',

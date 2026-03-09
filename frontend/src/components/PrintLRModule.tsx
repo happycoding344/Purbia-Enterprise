@@ -191,7 +191,7 @@ export default function PrintLRModule() {
             </div>
 
             {/* Data Table */}
-            <div style={{ background: 'white', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0', overflowX: 'auto' }}>
+            <div style={{ background: 'white', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0', overflowX: 'auto', maxWidth: '100%' }}>
                 {loading ? (
                     <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Loading LR records...</div>
                 ) : filtered.length === 0 ? (

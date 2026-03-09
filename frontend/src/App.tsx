@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 
@@ -13,9 +13,13 @@ function App() {
           <Route path="/login" element={<Login />} />
 
           <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<Dashboard />} />
-            {/* Future Routes like /invoices, /customers go here */}
+            <Route path="/" element={<Dashboard />}>
+              <Route path=":module" element={<Dashboard />} />
+            </Route>
           </Route>
+
+          {/* Catch-all route */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
     </AuthProvider>
