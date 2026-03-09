@@ -126,7 +126,11 @@ export default function InvoiceModule() {
             if (businessType === 'BEIL') {
                 items.forEach((item, i) => {
                     Object.entries(item).forEach(([k, v]) => {
-                        if (k !== 'id') fd.append(`items[${i}][${k}]`, String(v));
+                        if (k !== 'id') {
+                            // Map frontend field names to backend field names
+                            const fieldName = k === 'unit_rate' ? 'rate' : k === 'total_amount' ? 'total' : k;
+                            fd.append(`items[${i}][${fieldName}]`, String(v));
+                        }
                     });
                 });
             } else {
@@ -159,7 +163,17 @@ export default function InvoiceModule() {
             payment_due_date: form.payment_due_date,
             subject: form.subject,
             hsn_code: form.hsn_code,
-            items: businessType === 'BEIL' ? items : lrRecords.filter(lr => selectedLRs.includes(lr.id)).map(lr => ({
+            items: businessType === 'BEIL' ? items.map(item => ({
+                description: item.description,
+                sac_code: item.sac_code,
+                qty: item.qty,
+                unit: item.unit,
+                unit_rate: item.unit_rate,
+                amount: item.amount,
+                cgst: item.cgst,
+                sgst: item.sgst,
+                total_amount: item.total_amount
+            })) : lrRecords.filter(lr => selectedLRs.includes(lr.id)).map(lr => ({
                 description: `LR No: ${lr.lr_no}, Manifest: ${lr.manifest_no || '-'}`,
                 sac_code: form.hsn_code,
                 qty: 1,
@@ -177,6 +191,7 @@ export default function InvoiceModule() {
             grand_total: grandTotal,
             amount_in_words: amountWords
         };
+        console.log('Invoice Preview Data:', invoiceData);
         setPreviewInvoice(invoiceData);
     };
 
