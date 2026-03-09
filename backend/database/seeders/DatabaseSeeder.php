@@ -16,8 +16,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
         User::updateOrCreate(
             ['email' => 'admin@purbiaenterprise.com'],
             [
@@ -25,5 +23,7 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('Purbia@!2026#'),
             ]
         );
+
+        $this->call(MasterDataSeeder::class);
     }
 }
