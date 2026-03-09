@@ -101,8 +101,8 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, businessTyp
                                 <td colSpan={10} className="border border-black p-4 text-center text-gray-400 italic">No items listed</td>
                             </tr>
                         )}
-                        {/* Fill empty space if needed */}
-                        <tr className="h-40">
+                        {/* Reduced filler rows to prevent overflow */}
+                        <tr className="h-24">
                             <td className="border border-black p-1"></td>
                             <td className="border border-black p-1"></td>
                             <td className="border border-black p-1"></td>
@@ -168,10 +168,10 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, businessTyp
                     </tbody>
                 </table>
 
-                <div className="mt-8 text-right">
-                    <p className="font-bold text-[11pt]">For, M/s PURBIA ENTERPRISE</p>
-                    <div className="h-16"></div>
-                    <p className="font-bold">Authorized Signatory</p>
+                <div className="mt-4 text-right">
+                    <p className="font-bold text-[10pt]">For, M/s PURBIA ENTERPRISE</p>
+                    <div className="h-12 border-b border-gray-100 mb-2"></div>
+                    <p className="font-bold text-[10pt] pr-2">Authorised Signatory</p>
                 </div>
             </div>
 
@@ -186,18 +186,66 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, businessTyp
 
             <style>{`
                 @media print {
-                    @page { size: A4; margin: 0; }
-                    body { margin: 0; }
-                    #invoice-print-container { 
-                        width: 100% !important; 
-                        height: 297mm !important; 
+                    @page { 
+                        size: A4; 
+                        margin: 0mm; 
+                    }
+                    html, body {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        height: 297mm !important;
+                        overflow: hidden !important;
+                        background: white !important;
+                    }
+                    /* Hide everything except the print container */
+                    body > *:not(.print-root) {
+                        display: none !important;
+                    }
+                    /* Target shadcn/radix dialog overlays and content */
+                    [role="dialog"], 
+                    .fixed, 
+                    [data-state="open"],
+                    .DialogContent {
+                        position: static !important;
+                        background: white !important;
+                        box-shadow: none !important;
                         padding: 0 !important;
                         margin: 0 !important;
+                        width: 100% !important;
+                        height: 100% !important;
+                        border: none !important;
                     }
-                    header, footer { position: fixed; width: 100%; left: 0; }
-                    header { top: 0; }
-                    footer { bottom: 0; }
-                    .px-8 { padding-top: 130px; padding-bottom: 100px; }
+                    /* Hide dialog header/title during print */
+                    .no-print { display: none !important; }
+                    
+                    #invoice-print-container { 
+                        width: 210mm !important; 
+                        height: 297mm !important; 
+                        padding: 0 !important;
+                        margin: 0 auto !important;
+                        position: relative !important;
+                        box-sizing: border-box !important;
+                        transform: scale(1);
+                        transform-origin: top center;
+                        page-break-after: avoid;
+                        page-break-before: avoid;
+                        border: none !important;
+                    }
+                    header { position: absolute; top: 0; width: 100%; border: none !important; }
+                    footer { position: absolute; bottom: 0; width: 100%; border: none !important; }
+                    .px-8 { padding-top: 135px; padding-bottom: 90px; }
+                    
+                    /* Table and font fixes */
+                    table { border-collapse: collapse !important; width: 100% !important; }
+                    td, th { border: 1px solid black !important; }
+                    
+                    /* Force single page */
+                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                }
+                /* Signature block styling */
+                .signature-block {
+                    margin-top: 2rem;
+                    text-align: right;
                 }
             `}</style>
         </div>

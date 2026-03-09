@@ -12,12 +12,6 @@ import {
 import { format } from 'date-fns';
 import { InvoicePrint } from './InvoicePrint';
 
-const INDIAN_STATES = [
-    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana',
-    'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
-    'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana',
-    'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu and Kashmir', 'Ladakh',
-];
 
 type BillingParty = { id: number; name: string };
 type LRRecord = {
@@ -41,6 +35,7 @@ const emptyItem = (): InvoiceItem => ({
 export default function InvoiceModule() {
     const [businessType, setBusinessType] = useState<'BEIL' | 'PI'>('BEIL');
     const [billingParties, setBillingParties] = useState<BillingParty[]>([]);
+    const [states, setStates] = useState<{ id: number; name: string }[]>([]);
     const [lrRecords, setLrRecords] = useState<LRRecord[]>([]);
     const [selectedLRs, setSelectedLRs] = useState<number[]>([]);
     const [showLRPopup, setShowLRPopup] = useState(false);
@@ -64,13 +59,15 @@ export default function InvoiceModule() {
         const loadData = async () => {
             try {
                 setLoading(true);
-                const [bpRes, lrRes] = await Promise.all([
+                const [bpRes, lrRes, stateRes] = await Promise.all([
                     api.get('/masters/billing_parties').catch(e => ({ data: [] })),
-                    api.get('/lrs').catch(e => ({ data: [] }))
+                    api.get('/lrs').catch(e => ({ data: [] })),
+                    api.get('/masters/states').catch(e => ({ data: [] }))
                 ]);
 
                 setBillingParties(Array.isArray(bpRes.data) ? bpRes.data : []);
                 setLrRecords(Array.isArray(lrRes.data) ? lrRes.data : []);
+                setStates(Array.isArray(stateRes.data) ? stateRes.data : []);
                 setLoading(false);
             } catch (err: any) {
                 console.error('Failed to load invoice module data:', err);
@@ -155,7 +152,7 @@ export default function InvoiceModule() {
             invoice_date: form.invoice_date,
             billing_party: billingParties.find(bp => bp.id === +form.billing_party_id)?.name || '',
             delivery_address: form.delivery_address,
-            state: INDIAN_STATES[+form.state_id - 1] || '',
+            state: states.find(s => s.id === +form.state_id)?.name || '',
             state_code: form.state_code,
             gst_number: form.gst_number,
             po_number: form.po_number,
@@ -296,7 +293,7 @@ export default function InvoiceModule() {
                                 onChange={e => setForm(p => ({ ...p, state_id: e.target.value }))} required
                             >
                                 <option value="">Select state</option>
-                                {INDIAN_STATES.map((s, i) => <option key={i} value={i + 1}>{s}</option>)}
+                                {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                             </select>
                         </div>
                         <div>

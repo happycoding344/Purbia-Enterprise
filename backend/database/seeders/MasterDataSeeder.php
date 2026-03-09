@@ -20,9 +20,47 @@ class MasterDataSeeder extends Seeder
     public function run(): void
     {
         // States
-        $gujarat = State::updateOrCreate(['name' => 'Gujarat']);
-        $maharashtra = State::updateOrCreate(['name' => 'Maharashtra']);
-        $rajasthan = State::updateOrCreate(['name' => 'Rajasthan']);
+        $states = [
+            'Andhra Pradesh',
+            'Arunachal Pradesh',
+            'Assam',
+            'Bihar',
+            'Chhattisgarh',
+            'Goa',
+            'Gujarat',
+            'Haryana',
+            'Himachal Pradesh',
+            'Jharkhand',
+            'Karnataka',
+            'Kerala',
+            'Madhya Pradesh',
+            'Maharashtra',
+            'Manipur',
+            'Meghalaya',
+            'Mizoram',
+            'Nagaland',
+            'Odisha',
+            'Punjab',
+            'Rajasthan',
+            'Sikkim',
+            'Tamil Nadu',
+            'Telangana',
+            'Tripura',
+            'Uttar Pradesh',
+            'Uttarakhand',
+            'West Bengal',
+            'Andaman and Nicobar Islands',
+            'Chandigarh',
+            'Dadra and Nagar Haveli and Daman and Diu',
+            'Delhi',
+            'Jammu and Kashmir',
+            'Ladakh',
+            'Lakshadweep',
+            'Puducherry'
+        ];
+        foreach ($states as $stateName) {
+            State::updateOrCreate(['name' => $stateName]);
+        }
 
         // Cities
         foreach (['Ankleshwar', 'Panoli', 'Dahej', 'Jhagadia', 'Bharuch', 'Surat', 'Vadodara'] as $cityName) {
