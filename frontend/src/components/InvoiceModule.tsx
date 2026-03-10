@@ -6,11 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
-    Plus, Trash2, Printer, FileText, Building2,
+    Plus, Trash2, Download, FileText, Building2,
     ChevronRight, Upload, X, CheckSquare, Square
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { InvoicePrint } from './InvoicePrint';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 
 type BillingParty = { id: number; name: string };
@@ -26,6 +28,35 @@ type InvoiceItem = {
     qty: number; unit: string; unit_rate: number;
     amount: number; cgst: number; sgst: number; total_amount: number;
 };
+
+// Static predefined line items from the invoice template
+const STATIC_LINE_ITEMS = [
+    {
+        description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 10-20 Kms (one side).',
+        sac_code: '996511',
+        unit: 'Per trip'
+    },
+    {
+        description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 50-60 Kms (one side).',
+        sac_code: '996511',
+        unit: 'Per trip'
+    },
+    {
+        description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 70-80 Kms (one side).',
+        sac_code: '996511',
+        unit: 'Per trip'
+    },
+    {
+        description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 80-90 Kms (one side).',
+        sac_code: '996511',
+        unit: 'Per trip'
+    },
+    {
+        description: 'Detention',
+        sac_code: '996511',
+        unit: 'Per day'
+    }
+];
 
 const emptyItem = (): InvoiceItem => ({
     id: crypto.randomUUID(), description: '', sac_code: '', qty: 1,
@@ -150,49 +181,89 @@ export default function InvoiceModule() {
         }
     };
 
-    const handlePrintPreview = () => {
-        const invoiceData = {
-            invoice_no: form.invoice_no,
-            invoice_date: form.invoice_date,
-            billing_party: billingParties.find(bp => bp.id === +form.billing_party_id)?.name || '',
-            delivery_address: form.delivery_address,
-            state: states.find(s => s.id === +form.state_id)?.name || '',
-            state_code: form.state_code,
-            gst_number: form.gst_number,
-            po_number: form.po_number,
-            payment_due_date: form.payment_due_date,
-            subject: form.subject,
-            hsn_code: form.hsn_code,
-            items: businessType === 'BEIL' ? items.map(item => ({
-                description: item.description,
-                sac_code: item.sac_code,
-                qty: item.qty,
-                unit: item.unit,
-                unit_rate: item.unit_rate,
-                amount: item.amount,
-                cgst: item.cgst,
-                sgst: item.sgst,
-                total_amount: item.total_amount
-            })) : lrRecords.filter(lr => selectedLRs.includes(lr.id)).map(lr => ({
-                description: `LR No: ${lr.lr_no}, Manifest: ${lr.manifest_no || '-'}`,
-                sac_code: form.hsn_code,
-                qty: 1,
-                unit: 'Trip',
-                unit_rate: lr.total_amount,
-                amount: lr.total_amount,
-                cgst: (lr.total_amount || 0) * 0.09,
-                sgst: (lr.total_amount || 0) * 0.09,
-                total_amount: (lr.total_amount || 0) * 1.18
-            })),
-            total_amount_before_tax: totalAmount,
-            tax_amount: gstAmount,
-            cgst_total: cgstAmount,
-            sgst_total: sgstAmount,
-            grand_total: grandTotal,
-            amount_in_words: amountWords
-        };
-        console.log('Invoice Preview Data:', invoiceData);
-        setPreviewInvoice(invoiceData);
+    const handleSaveAsPDF = async () => {
+        try {
+            // Create invoice data
+            const invoiceData = {
+                invoice_no: form.invoice_no,
+                invoice_date: form.invoice_date,
+                billing_party: billingParties.find(bp => bp.id === +form.billing_party_id)?.name || '',
+                delivery_address: form.delivery_address,
+                state: states.find(s => s.id === +form.state_id)?.name || '',
+                state_code: form.state_code,
+                gst_number: form.gst_number,
+                po_number: form.po_number,
+                payment_due_date: form.payment_due_date,
+                subject: form.subject,
+                hsn_code: form.hsn_code,
+                items: businessType === 'BEIL' ? items.map(item => ({
+                    description: item.description,
+                    sac_code: item.sac_code,
+                    qty: item.qty,
+                    unit: item.unit,
+                    unit_rate: item.unit_rate,
+                    amount: item.amount,
+                    cgst: item.cgst,
+                    sgst: item.sgst,
+                    total_amount: item.total_amount
+                })) : lrRecords.filter(lr => selectedLRs.includes(lr.id)).map(lr => ({
+                    description: `LR No: ${lr.lr_no}, Manifest: ${lr.manifest_no || '-'}`,
+                    sac_code: form.hsn_code,
+                    qty: 1,
+                    unit: 'Trip',
+                    unit_rate: lr.total_amount,
+                    amount: lr.total_amount,
+                    cgst: (lr.total_amount || 0) * 0.09,
+                    sgst: (lr.total_amount || 0) * 0.09,
+                    total_amount: (lr.total_amount || 0) * 1.18
+                })),
+                total_amount_before_tax: totalAmount,
+                tax_amount: gstAmount,
+                cgst_total: cgstAmount,
+                sgst_total: sgstAmount,
+                grand_total: grandTotal,
+                amount_in_words: amountWords
+            };
+
+            // Set preview to render component
+            setPreviewInvoice(invoiceData);
+
+            // Wait for component to render
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Get the invoice container
+            const invoiceElement = document.getElementById('invoice-print-container');
+            if (!invoiceElement) {
+                throw new Error('Invoice element not found');
+            }
+
+            // Convert to canvas
+            const canvas = await html2canvas(invoiceElement, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                width: 794, // A4 width in pixels at 96 DPI
+                height: 1123 // A4 height in pixels at 96 DPI
+            });
+
+            // Convert canvas to PDF
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = 210; // A4 width in mm
+            const pdfHeight = 297; // A4 height in mm
+
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+            // Download PDF
+            const fileName = `${businessType}_Invoice_${form.invoice_no || 'draft'}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+            pdf.save(fileName);
+
+            // Close preview
+            setPreviewInvoice(null);
+        } catch (error) {
+            console.error('Failed to generate PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        }
     };
 
     // Loading state
@@ -428,17 +499,33 @@ export default function InvoiceModule() {
                                             <tr key={item.id}>
                                                 <td style={{ padding: '8px 12px', textAlign: 'center', color: '#64748b' }}>{idx + 1}</td>
                                                 <td style={{ padding: '4px 8px' }}>
-                                                    <Input value={item.description} onChange={e => updateItem(item.id, 'description', e.target.value)} placeholder="Description" />
+                                                    <select
+                                                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                                                        value={item.description}
+                                                        onChange={(e) => {
+                                                            const selectedItem = STATIC_LINE_ITEMS.find(i => i.description === e.target.value);
+                                                            if (selectedItem) {
+                                                                updateItem(item.id, 'description', selectedItem.description);
+                                                                updateItem(item.id, 'sac_code', selectedItem.sac_code);
+                                                                updateItem(item.id, 'unit', selectedItem.unit);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <option value="">Select item...</option>
+                                                        {STATIC_LINE_ITEMS.map((staticItem, idx) => (
+                                                            <option key={idx} value={staticItem.description}>
+                                                                {staticItem.description.length > 50
+                                                                    ? staticItem.description.substring(0, 50) + '...'
+                                                                    : staticItem.description}
+                                                            </option>
+                                                        ))}
+                                                    </select>
                                                 </td>
-                                                <td style={{ padding: '4px 8px' }}>
-                                                    <Input value={item.sac_code} onChange={e => updateItem(item.id, 'sac_code', e.target.value)} placeholder="SAC" style={{ width: 80 }} />
-                                                </td>
+                                                <td style={{ padding: '8px 12px', textAlign: 'center', color: '#64748b' }}>{item.sac_code || '-'}</td>
                                                 <td style={{ padding: '4px 8px' }}>
                                                     <Input type="number" value={item.qty} onChange={e => updateItem(item.id, 'qty', +e.target.value)} style={{ width: 70 }} />
                                                 </td>
-                                                <td style={{ padding: '4px 8px' }}>
-                                                    <Input value={item.unit} onChange={e => updateItem(item.id, 'unit', e.target.value)} style={{ width: 60 }} />
-                                                </td>
+                                                <td style={{ padding: '8px 12px', textAlign: 'center', color: '#64748b' }}>{item.unit || '-'}</td>
                                                 <td style={{ padding: '4px 8px' }}>
                                                     <Input type="number" value={item.unit_rate} onChange={e => updateItem(item.id, 'unit_rate', +e.target.value)} style={{ width: 100 }} />
                                                 </td>
@@ -546,8 +633,9 @@ export default function InvoiceModule() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                    <Button type="button" variant="outline" onClick={handlePrintPreview} disabled={!form.invoice_no}>
-                        Preview & Print
+                    <Button type="button" variant="outline" onClick={handleSaveAsPDF} disabled={!form.invoice_no}>
+                        <Download size={16} className="mr-2" />
+                        Save as PDF
                     </Button>
                     <Button type="button" variant="outline">Cancel</Button>
                     <Button type="submit" disabled={submitting}
@@ -557,17 +645,12 @@ export default function InvoiceModule() {
                 </div>
             </form>
 
-            <Dialog open={!!previewInvoice} onOpenChange={() => setPreviewInvoice(null)}>
-                <DialogContent style={{ maxWidth: '220mm', maxHeight: '90vh', overflowY: 'auto', padding: 0 }}>
-                    <div className="p-4 bg-gray-100 border-b flex justify-between items-center sticky top-0 z-10 no-print">
-                        <DialogTitle>Invoice Print Preview</DialogTitle>
-                        <Button onClick={() => window.print()}>
-                            <Printer size={16} className="mr-2" /> Print A4 PDF
-                        </Button>
-                    </div>
-                    {previewInvoice && <InvoicePrint invoice={previewInvoice} businessType={businessType} />}
-                </DialogContent>
-            </Dialog>
+            {/* Hidden invoice component for PDF generation */}
+            {previewInvoice && (
+                <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+                    <InvoicePrint invoice={previewInvoice} businessType={businessType} />
+                </div>
+            )}
         </div>
     );
 }
