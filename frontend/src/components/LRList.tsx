@@ -9,7 +9,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Plus, Download, FileText } from 'lucide-react';
+import { Plus, Download, FileText, Edit, Trash2 } from 'lucide-react';
 import { LRForm } from './LRForm';
 import {
     Dialog,
@@ -40,6 +40,7 @@ export default function LRList() {
     const [lrs, setLrs] = useState<LR[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [open, setOpen] = useState(false);
+    const [editingLR, setEditingLR] = useState<LR | null>(null);
 
     useEffect(() => {
         fetchLrs();
@@ -57,6 +58,34 @@ export default function LRList() {
         }
     };
 
+    const handleEdit = async (lr: LR) => {
+        try {
+            // Fetch full LR details with items
+            const response = await api.get(`/lrs/${lr.id}`);
+            setEditingLR(response.data);
+            setOpen(true);
+        } catch (error) {
+            console.error('Error fetching LR details', error);
+            alert('Failed to load LR details');
+        }
+    };
+
+    const handleDelete = async (id: number) => {
+        if (!confirm('Are you sure you want to delete this LR?')) return;
+        try {
+            await api.delete(`/lrs/${id}`);
+            fetchLrs();
+        } catch (error) {
+            console.error('Error deleting LR', error);
+            alert('Failed to delete LR');
+        }
+    };
+
+    const handleCloseDialog = () => {
+        setOpen(false);
+        setEditingLR(null);
+    };
+
     if (isLoading) {
         return <div className="py-10 text-center text-gray-500">Loading LR history...</div>;
     }
@@ -65,14 +94,17 @@ export default function LRList() {
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Loading Receipt (LR) History</h3>
-                <Dialog open={open} onOpenChange={setOpen}>
+                <Dialog open={open} onOpenChange={handleCloseDialog}>
                     <DialogTrigger asChild>
                         <Button className="bg-blue-600 hover:bg-blue-700">
                             <Plus className="mr-2 h-4 w-4" /> Prepare New LR
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-[95vw] w-full max-h-[95vh] overflow-y-auto p-0">
-                        <LRForm onSuccess={() => { fetchLrs(); setOpen(false); }} />
+                        <LRForm
+                            onSuccess={() => { fetchLrs(); handleCloseDialog(); }}
+                            editLR={editingLR}
+                        />
                     </DialogContent>
                 </Dialog>
             </div>
@@ -123,8 +155,31 @@ export default function LRList() {
                                         ₹{parseFloat(String(lr.total_amount)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                     </TableCell>
                                     <TableCell className="text-right space-x-1">
-                                        <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                            title="Download PDF"
+                                        >
                                             <Download className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                                            onClick={() => handleEdit(lr)}
+                                            title="Edit LR"
+                                        >
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                            onClick={() => handleDelete(lr.id)}
+                                            title="Delete LR"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </TableCell>
                                 </TableRow>

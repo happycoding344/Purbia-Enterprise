@@ -55,10 +55,16 @@ const lrSchema = z.object({
 
 type LRFormValues = z.infer<typeof lrSchema>;
 
-export function LRForm({ onSuccess }: { onSuccess: () => void }) {
+interface LRFormProps {
+    onSuccess: () => void;
+    editLR?: any; // LR data for editing
+}
+
+export function LRForm({ onSuccess, editLR }: LRFormProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
     const [activeTab, setActiveTab] = useState('part1');
+    const isEditMode = !!editLR;
 
     const {
         register,
@@ -69,7 +75,14 @@ export function LRForm({ onSuccess }: { onSuccess: () => void }) {
         formState: { errors },
     } = useForm<LRFormValues>({
         resolver: zodResolver(lrSchema) as any,
-        defaultValues: {
+        defaultValues: editLR ? {
+            ...editLR,
+            lr_date: editLR.lr_date ? format(new Date(editLR.lr_date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+            manifest_date: editLR.manifest_date ? format(new Date(editLR.manifest_date), 'yyyy-MM-dd') : null,
+            inward_time: editLR.inward_time || null,
+            outward_time: editLR.outward_time || null,
+            items: editLR.items || [{ item_name: '', unit: 'Kl', rate_type: 'Qty', qty: 0, weight: 0, rate: 0 }],
+        } : {
             financial_year: '2025-2026',
             lr_date: format(new Date(), 'yyyy-MM-dd'),
             tax_paid_by: 'Transporter',
@@ -128,12 +141,21 @@ export function LRForm({ onSuccess }: { onSuccess: () => void }) {
                 formData.append('attachments[]', file);
             });
 
-            await api.post('/lrs', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
+            if (isEditMode) {
+                // Update existing LR
+                await api.post(`/lrs/${editLR.id}`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+            } else {
+                // Create new LR
+                await api.post('/lrs', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+            }
             onSuccess();
         } catch (err) {
             console.error('Failed to submit LR', err);
+            alert(isEditMode ? 'Failed to update LR' : 'Failed to create LR');
         } finally {
             setIsSubmitting(false);
         }
@@ -502,7 +524,7 @@ export function LRForm({ onSuccess }: { onSuccess: () => void }) {
 
                                     <div className="pt-4 space-y-2">
                                         <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg font-bold" disabled={isSubmitting}>
-                                            {isSubmitting ? 'Processing LR...' : 'Save & Generate LR'}
+                                            {isSubmitting ? (isEditMode ? 'Updating LR...' : 'Processing LR...') : (isEditMode ? 'Update LR' : 'Save & Generate LR')}
                                         </Button>
                                         <Button type="button" variant="outline" className="w-full" onClick={() => setActiveTab('part3')}>
                                             Back to Items

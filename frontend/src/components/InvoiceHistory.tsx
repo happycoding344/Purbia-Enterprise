@@ -125,9 +125,24 @@ export default function InvoiceHistory() {
         }
     };
 
-    const handleEdit = (inv: Invoice) => {
-        alert('Edit functionality will be implemented soon!');
-        // TODO: Navigate to edit page or open edit modal
+    const handleEdit = async (inv: Invoice) => {
+        try {
+            // Fetch full invoice details
+            const response = await api.get(`/invoices/${inv.id}`);
+            const fullInvoice = response.data;
+
+            // Store invoice in localStorage for editing
+            localStorage.setItem('editInvoice', JSON.stringify(fullInvoice));
+
+            // Navigate to Generate Invoice page
+            window.location.hash = '#/generate-invoice';
+
+            // Reload to trigger the edit mode
+            window.location.reload();
+        } catch (error) {
+            console.error('Failed to load invoice for editing:', error);
+            alert('Failed to load invoice details for editing');
+        }
     };
 
     if (loading) {
