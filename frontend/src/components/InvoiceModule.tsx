@@ -59,9 +59,25 @@ const STATIC_LINE_ITEMS = [
 ];
 
 const emptyItem = (): InvoiceItem => ({
-    id: crypto.randomUUID(), description: '', sac_code: '', qty: 1,
+    id: crypto.randomUUID(), description: '', sac_code: '', qty: 0,
     unit: 'KL', unit_rate: 0, amount: 0, cgst: 0, sgst: 0, total_amount: 0
 });
+
+// Initialize 5 pre-filled BEIL items
+const initializeBEILItems = (): InvoiceItem[] => {
+    return STATIC_LINE_ITEMS.map(staticItem => ({
+        id: crypto.randomUUID(),
+        description: staticItem.description,
+        sac_code: staticItem.sac_code,
+        unit: staticItem.unit,
+        qty: 0,
+        unit_rate: 0,
+        amount: 0,
+        cgst: 0,
+        sgst: 0,
+        total_amount: 0
+    }));
+};
 
 export default function InvoiceModule() {
     const [businessType, setBusinessType] = useState<'BEIL' | 'PI'>('BEIL');
@@ -70,7 +86,7 @@ export default function InvoiceModule() {
     const [lrRecords, setLrRecords] = useState<LRRecord[]>([]);
     const [selectedLRs, setSelectedLRs] = useState<number[]>([]);
     const [showLRPopup, setShowLRPopup] = useState(false);
-    const [items, setItems] = useState<InvoiceItem[]>([emptyItem()]);
+    const [items, setItems] = useState<InvoiceItem[]>(initializeBEILItems());
     const [files, setFiles] = useState<File[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -495,58 +511,78 @@ export default function InvoiceModule() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {items.map((item, idx) => (
-                                            <tr key={item.id}>
-                                                <td style={{ padding: '8px 12px', textAlign: 'center', color: '#64748b' }}>{idx + 1}</td>
-                                                <td style={{ padding: '4px 8px' }}>
-                                                    <select
-                                                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                                                        value={item.description}
-                                                        onChange={(e) => {
-                                                            const selectedItem = STATIC_LINE_ITEMS.find(i => i.description === e.target.value);
-                                                            if (selectedItem) {
-                                                                updateItem(item.id, 'description', selectedItem.description);
-                                                                updateItem(item.id, 'sac_code', selectedItem.sac_code);
-                                                                updateItem(item.id, 'unit', selectedItem.unit);
-                                                            }
-                                                        }}
-                                                    >
-                                                        <option value="">Select item...</option>
-                                                        {STATIC_LINE_ITEMS.map((staticItem, idx) => (
-                                                            <option key={idx} value={staticItem.description}>
-                                                                {staticItem.description.length > 50
-                                                                    ? staticItem.description.substring(0, 50) + '...'
-                                                                    : staticItem.description}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </td>
-                                                <td style={{ padding: '8px 12px', textAlign: 'center', color: '#64748b' }}>{item.sac_code || '-'}</td>
-                                                <td style={{ padding: '4px 8px' }}>
-                                                    <Input type="number" value={item.qty} onChange={e => updateItem(item.id, 'qty', +e.target.value)} style={{ width: 70 }} />
-                                                </td>
-                                                <td style={{ padding: '8px 12px', textAlign: 'center', color: '#64748b' }}>{item.unit || '-'}</td>
-                                                <td style={{ padding: '4px 8px' }}>
-                                                    <Input type="number" value={item.unit_rate} onChange={e => updateItem(item.id, 'unit_rate', +e.target.value)} style={{ width: 100 }} />
-                                                </td>
-                                                <td style={{ padding: '8px 12px', fontWeight: 600, textAlign: 'right' }}>₹{item.amount.toFixed(2)}</td>
-                                                <td style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b' }}>₹{item.cgst.toFixed(2)}</td>
-                                                <td style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b' }}>₹{item.sgst.toFixed(2)}</td>
-                                                <td style={{ padding: '8px 12px', fontWeight: 700, textAlign: 'right', color: '#0f172a' }}>₹{item.total_amount.toFixed(2)}</td>
-                                                <td style={{ padding: '4px 8px' }}>
-                                                    <button type="button" onClick={() => setItems(p => p.filter(i => i.id !== item.id))}
-                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {items.map((item, idx) => {
+                                            const isStaticRow = idx < 5; // First 5 rows are static
+                                            return (
+                                                <tr key={item.id} style={{ background: isStaticRow ? '#f8fafc' : 'white' }}>
+                                                    <td style={{ padding: '8px 12px', textAlign: 'center', color: '#64748b', fontWeight: isStaticRow ? 600 : 400 }}>{idx + 1}</td>
+                                                    <td style={{ padding: '8px 12px', fontSize: 11, color: '#374151', lineHeight: 1.4 }}>
+                                                        {isStaticRow ? (
+                                                            <span style={{ fontWeight: 500 }}>{item.description}</span>
+                                                        ) : (
+                                                            <Input
+                                                                value={item.description}
+                                                                onChange={e => updateItem(item.id, 'description', e.target.value)}
+                                                                placeholder="Enter description"
+                                                                style={{ fontSize: 11 }}
+                                                            />
+                                                        )}
+                                                    </td>
+                                                    <td style={{ padding: '8px 12px', textAlign: 'center', color: '#64748b', fontWeight: 600 }}>
+                                                        {isStaticRow ? item.sac_code : (
+                                                            <Input
+                                                                value={item.sac_code}
+                                                                onChange={e => updateItem(item.id, 'sac_code', e.target.value)}
+                                                                style={{ width: 80, textAlign: 'center' }}
+                                                            />
+                                                        )}
+                                                    </td>
+                                                    <td style={{ padding: '4px 8px' }}>
+                                                        <Input
+                                                            type="number"
+                                                            value={item.qty}
+                                                            onChange={e => updateItem(item.id, 'qty', +e.target.value)}
+                                                            style={{ width: 70 }}
+                                                        />
+                                                    </td>
+                                                    <td style={{ padding: '8px 12px', textAlign: 'center', color: '#64748b', fontWeight: 600 }}>
+                                                        {isStaticRow ? item.unit : (
+                                                            <Input
+                                                                value={item.unit}
+                                                                onChange={e => updateItem(item.id, 'unit', e.target.value)}
+                                                                style={{ width: 80, textAlign: 'center' }}
+                                                            />
+                                                        )}
+                                                    </td>
+                                                    <td style={{ padding: '4px 8px' }}>
+                                                        <Input
+                                                            type="number"
+                                                            value={item.unit_rate}
+                                                            onChange={e => updateItem(item.id, 'unit_rate', +e.target.value)}
+                                                            style={{ width: 100 }}
+                                                        />
+                                                    </td>
+                                                    <td style={{ padding: '8px 12px', fontWeight: 600, textAlign: 'right' }}>₹{item.amount.toFixed(2)}</td>
+                                                    <td style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b' }}>₹{item.cgst.toFixed(2)}</td>
+                                                    <td style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b' }}>₹{item.sgst.toFixed(2)}</td>
+                                                    <td style={{ padding: '8px 12px', fontWeight: 700, textAlign: 'right', color: '#0f172a' }}>₹{item.total_amount.toFixed(2)}</td>
+                                                    <td style={{ padding: '4px 8px', textAlign: 'center' }}>
+                                                        {!isStaticRow && (
+                                                            <button type="button" onClick={() => setItems(p => p.filter(i => i.id !== item.id))}
+                                                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
                             <button type="button" onClick={() => setItems(p => [...p, emptyItem()])}
-                                style={{ marginTop: 12, padding: '8px 16px', borderRadius: 8, border: '1.5px dashed #cbd5e0', background: 'none', cursor: 'pointer', color: '#64748b', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <Plus size={14} /> Add Item Row
+                                style={{ marginTop: 12, padding: '10px 20px', borderRadius: 8, border: '2px dashed #3b82f6', background: '#eff6ff', cursor: 'pointer', color: '#3b82f6', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+                                <Plus size={16} /> Add Extra Line Item
                             </button>
                         </div>
                     ) : (
