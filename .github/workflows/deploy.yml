@@ -60,6 +60,13 @@ jobs:
             ./backend/database/migrations/ \
             $SSH_USER@$SSH_HOST:$DEPLOY_PATH/database/migrations/
 
+      - name: Deploy routes directory
+        run: |
+          sshpass -p "${{ secrets.HOSTINGER_SSH_PASS }}" \
+            rsync -avz -e "ssh -p $SSH_PORT -o StrictHostKeyChecking=no" \
+            ./backend/routes/ \
+            $SSH_USER@$SSH_HOST:$DEPLOY_PATH/routes/
+
       - name: Run post-deploy script (permissions + path fix)
         run: |
           sshpass -p "${{ secrets.HOSTINGER_SSH_PASS }}" \
