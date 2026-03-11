@@ -11,10 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Update the admin user credentials
+        // First, delete any duplicate admin@purbiaenterprise.com if it exists
         DB::table('users')
-            ->where('email', 'admin@purbia.com')
-            ->orWhere('email', 'test@example.com')
+            ->where('email', 'admin@purbiaenterprise.com')
+            ->delete();
+
+        // Then update the old admin user credentials
+        DB::table('users')
+            ->where(function($query) {
+                $query->where('email', 'admin@purbia.com')
+                      ->orWhere('email', 'test@example.com');
+            })
             ->update([
                 'email' => 'admin@purbiaenterprise.com',
                 'name' => 'Purbia Admin',
