@@ -11,23 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // First, delete any duplicate admin@purbiaenterprise.com if it exists
-        DB::table('users')
-            ->where('email', 'admin@purbiaenterprise.com')
-            ->delete();
+        // Get the hashed password
+        $hashedPassword = Hash::make('Purbia@!2026#');
+        $now = now()->format('Y-m-d H:i:s');
 
-        // Then update the old admin user credentials
-        DB::table('users')
-            ->where(function($query) {
-                $query->where('email', 'admin@purbia.com')
-                      ->orWhere('email', 'test@example.com');
-            })
-            ->update([
-                'email' => 'admin@purbiaenterprise.com',
-                'name' => 'Purbia Admin',
-                'password' => Hash::make('Purbia@!2026#'),
-                'updated_at' => now(),
-            ]);
+        // Use raw SQL for more control
+        DB::statement("
+            UPDATE users
+            SET email = 'admin@purbiaenterprise.com',
+                name = 'Purbia Admin',
+                password = ?,
+                updated_at = ?
+            WHERE id = 1
+        ", [$hashedPassword, $now]);
     }
 
     /**
