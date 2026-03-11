@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Lr;
 use App\Models\LrItem;
 use App\Models\LrAttachment;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -117,6 +118,13 @@ class LrController extends Controller
                     ]);
                 }
             }
+
+            // Log activity
+            ActivityLog::log('created', 'LR', $lr->id, "Created LR #{$lr->lr_no} for {$lr->financial_year}", [
+                'lr_no' => $lr->lr_no,
+                'financial_year' => $lr->financial_year,
+                'total_amount' => $lr->total_amount,
+            ]);
 
             return response()->json($lr->load('items', 'attachments'), 201);
         });

@@ -10,6 +10,8 @@ use App\Http\Controllers\PdfController;
 use App\Http\Controllers\Api\MasterController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\LrController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\GlobalSearchController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -27,4 +29,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('lrs', LrController::class);
 
     Route::get('/invoices/{invoice}/pdf-data', [PdfController::class, 'generateInvoice']);
+
+    // Activity Logs
+    Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+    Route::get('/activity-logs/dashboard', [ActivityLogController::class, 'dashboard']);
+    Route::get('/activity-logs/{modelType}', [ActivityLogController::class, 'byModel']);
+
+    // Global Search
+    Route::get('/search', [GlobalSearchController::class, 'search']);
 });

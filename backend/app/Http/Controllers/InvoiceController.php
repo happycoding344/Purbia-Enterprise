@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -84,6 +85,13 @@ class InvoiceController extends Controller
                     ]);
                 }
             }
+
+            // Log activity
+            ActivityLog::log('created', 'Invoice', $invoice->id, "Created {$invoice->business_type} Invoice #{$invoice->invoice_no}", [
+                'invoice_no' => $invoice->invoice_no,
+                'business_type' => $invoice->business_type,
+                'total_amount' => $invoice->total_amount,
+            ]);
 
             return response()->json($invoice->load(['items', 'lrs', 'attachments']), 201);
         });
@@ -167,13 +175,28 @@ class InvoiceController extends Controller
                 }
             }
 
+            // Log activity
+            ActivityLog::log('updated', 'Invoice', $invoice->id, "Updated {$invoice->business_type} Invoice #{$invoice->invoice_no}", [
+                'invoice_no' => $invoice->invoice_no,
+                'business_type' => $invoice->business_type,
+            ]);
+
             return response()->json($invoice->load(['items', 'lrs', 'attachments']), 200);
         });
     }
 
     public function destroy(Invoice $invoice)
     {
+        $invoiceNo = $invoice->invoice_no;
+        $businessType = $invoice->business_type;
+
         $invoice->delete();
+
+        // Log activity
+        ActivityLog::log('deleted', 'Invoice', null, "Deleted {$businessType} Invoice #{$invoiceNo}", [
+            'invoice_no' => $invoiceNo,
+            'business_type' => $businessType,
+        ]);
         return response()->json(['message' => 'Invoice deleted successfully']);
     }
 }

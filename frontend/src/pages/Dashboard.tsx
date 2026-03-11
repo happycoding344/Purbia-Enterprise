@@ -7,10 +7,13 @@ import InvoiceModule from '@/components/InvoiceModule';
 import PrintLRModule from '@/components/PrintLRModule';
 import InvoiceHistory from '@/components/InvoiceHistory';
 import CustomersList from '@/components/CustomersList';
+import { GlobalSearch } from '@/components/GlobalSearch';
+import { ActivityLogModal } from '@/components/ActivityLogModal';
+import { DashboardActivityWidget } from '@/components/DashboardActivityWidget';
 import {
     FileText, Truck, Receipt, Printer, History,
     Users, LogOut, Menu, ChevronRight,
-    BarChart3, TrendingUp, AlertCircle
+    BarChart3, TrendingUp, AlertCircle, Activity
 } from 'lucide-react';
 
 type ActiveModule =
@@ -38,6 +41,7 @@ export default function Dashboard() {
     const { module } = useParams();
     const [activeModule, setActiveModule] = useState<ActiveModule>((module as ActiveModule) || 'dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [activityLogOpen, setActivityLogOpen] = useState(false);
 
     useEffect(() => {
         if (module && module !== activeModule) {
@@ -188,6 +192,30 @@ export default function Dashboard() {
                         </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <GlobalSearch />
+                        <button
+                            onClick={() => setActivityLogOpen(true)}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: 8,
+                                border: '1px solid #e2e8f0',
+                                background: 'white',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                color: '#3b82f6',
+                                fontSize: 14,
+                                fontWeight: 500,
+                                transition: 'all 0.2s'
+                            }}
+                            title="Activity Log"
+                            onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'}
+                            onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                        >
+                            <Activity size={18} />
+                            Activity
+                        </button>
                         <div style={{
                             padding: '6px 14px', borderRadius: 20,
                             background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)',
@@ -203,6 +231,9 @@ export default function Dashboard() {
                     {renderContent()}
                 </main>
             </div>
+
+            {/* Activity Log Modal */}
+            <ActivityLogModal open={activityLogOpen} onOpenChange={setActivityLogOpen} />
         </div>
     );
 }
@@ -292,7 +323,7 @@ function DashboardHome({ onNavigate }: { onNavigate: (module: ActiveModule) => v
             </div>
 
             {/* Info Modules */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
                 <div style={{ background: 'white', borderRadius: 16, padding: 24, border: '1px solid #e2e8f0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                         <TrendingUp size={18} color="#3b82f6" />
@@ -338,6 +369,9 @@ function DashboardHome({ onNavigate }: { onNavigate: (module: ActiveModule) => v
                         </div>
                     ))}
                 </div>
+
+                {/* Recent Activity Widget */}
+                <DashboardActivityWidget />
             </div>
         </div>
     );

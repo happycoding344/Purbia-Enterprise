@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Vehicle;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 
 class VehicleController extends Controller
@@ -52,6 +53,12 @@ class VehicleController extends Controller
             }
         }
 
+        // Log activity
+        ActivityLog::log('created', 'Vehicle', $vehicle->id, "Added vehicle {$vehicle->registration_no}", [
+            'registration_no' => $vehicle->registration_no,
+            'owner_name' => $vehicle->owner_name,
+        ]);
+
         return response()->json($vehicle->load('attachments'), 201);
     }
 
@@ -94,12 +101,25 @@ class VehicleController extends Controller
             }
         }
 
+        // Log activity
+        ActivityLog::log('updated', 'Vehicle', $vehicle->id, "Updated vehicle {$vehicle->registration_no}", [
+            'registration_no' => $vehicle->registration_no,
+        ]);
+
         return response()->json($vehicle->load('attachments'));
     }
 
     public function destroy(Vehicle $vehicle)
     {
+        $registrationNo = $vehicle->registration_no;
+
         $vehicle->delete();
+
+        // Log activity
+        ActivityLog::log('deleted', 'Vehicle', null, "Deleted vehicle {$registrationNo}", [
+            'registration_no' => $registrationNo,
+        ]);
+
         return response()->json(null, 204);
     }
 }
