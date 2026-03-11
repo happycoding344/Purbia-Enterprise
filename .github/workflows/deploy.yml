@@ -78,7 +78,7 @@ jobs:
             ssh -p $SSH_PORT -o StrictHostKeyChecking=no \
             $SSH_USER@$SSH_HOST \
             "cd $DEPLOY_PATH && \
-             /usr/bin/php artisan migrate --force --seed && \
+             /usr/bin/php artisan migrate --force && \
              /usr/bin/php artisan config:cache && \
              /usr/bin/php artisan route:cache && \
              echo 'Deployment complete!'"
