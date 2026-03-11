@@ -80,13 +80,33 @@ const initializeBEILItems = (): InvoiceItem[] => {
 };
 
 export default function InvoiceModule() {
-    const [businessType, setBusinessType] = useState<'BEIL' | 'PI'>('BEIL');
+    // Check for edit invoice from localStorage
+    const editInvoiceData = localStorage.getItem('editInvoice');
+    const editInvoice = editInvoiceData ? JSON.parse(editInvoiceData) : null;
+    const isEditMode = !!editInvoice;
+
+    const [businessType, setBusinessType] = useState<'BEIL' | 'PI'>(editInvoice?.business_type || 'BEIL');
     const [billingParties, setBillingParties] = useState<BillingParty[]>([]);
     const [states, setStates] = useState<{ id: number; name: string }[]>([]);
     const [lrRecords, setLrRecords] = useState<LRRecord[]>([]);
-    const [selectedLRs, setSelectedLRs] = useState<number[]>([]);
+    const [selectedLRs, setSelectedLRs] = useState<number[]>(editInvoice?.lrs?.map((lr: any) => lr.id) || []);
     const [showLRPopup, setShowLRPopup] = useState(false);
-    const [items, setItems] = useState<InvoiceItem[]>(initializeBEILItems());
+    const [items, setItems] = useState<InvoiceItem[]>(
+        editInvoice?.items && editInvoice.business_type === 'BEIL'
+            ? editInvoice.items.map((item: any) => ({
+                id: item.id || crypto.randomUUID(),
+                description: item.description || '',
+                sac_code: item.sac_code || '',
+                qty: item.qty || 0,
+                unit: item.unit || '',
+                unit_rate: item.rate || item.unit_rate || 0,
+                amount: item.amount || 0,
+                cgst: item.cgst || 0,
+                sgst: item.sgst || 0,
+                total_amount: item.total || item.total_amount || 0
+            }))
+            : initializeBEILItems()
+    );
     const [files, setFiles] = useState<File[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -96,10 +116,17 @@ export default function InvoiceModule() {
     const [loadError, setLoadError] = useState('');
 
     const [form, setForm] = useState({
-        invoice_no: '', invoice_date: format(new Date(), 'yyyy-MM-dd'),
-        billing_party_id: '', delivery_address: '', state_id: '',
-        state_code: '', gst_number: '', po_number: '',
-        payment_due_date: '', subject: '', hsn_code: '',
+        invoice_no: editInvoice?.invoice_no || '',
+        invoice_date: editInvoice?.invoice_date ? format(new Date(editInvoice.invoice_date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+        billing_party_id: editInvoice?.billing_party_id?.toString() || '',
+        delivery_address: editInvoice?.delivery_address || '',
+        state_id: editInvoice?.state_id?.toString() || '',
+        state_code: editInvoice?.state_code || '',
+        gst_number: editInvoice?.gst_number || '',
+        po_number: editInvoice?.po_number || '',
+        payment_due_date: editInvoice?.payment_due_date ? format(new Date(editInvoice.payment_due_date), 'yyyy-MM-dd') : '',
+        subject: editInvoice?.subject || '',
+        hsn_code: editInvoice?.hsn_code || '',
     });
 
     useEffect(() => {
@@ -186,9 +213,25 @@ export default function InvoiceModule() {
 
             files.forEach(f => fd.append('attachments[]', f));
 
-            await api.post('/invoices', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            // Use PUT for edit mode, POST for create mode
+            if (isEditMode && editInvoice?.id) {
+                fd.append('_method', 'PUT');
+                await api.post(`/invoices/${editInvoice.id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            } else {
+                await api.post('/invoices', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            }
+
+            // Clear localStorage after successful save
+            if (isEditMode) {
+                localStorage.removeItem('editInvoice');
+            }
+
             setSuccess(true);
-            setTimeout(() => setSuccess(false), 4000);
+            setTimeout(() => {
+                setSuccess(false);
+                // Redirect to invoice history after successful save
+                window.location.hash = '#/invoice-history';
+            }, 2000);
         } catch (err: any) {
             console.error('Invoice save error:', err);
             setError(err.response?.data?.message || 'Failed to save invoice.');
@@ -676,7 +719,7 @@ export default function InvoiceModule() {
                     <Button type="button" variant="outline">Cancel</Button>
                     <Button type="submit" disabled={submitting}
                         style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', color: 'white', border: 'none', padding: '10px 28px' }}>
-                        {submitting ? 'Saving...' : `Save ${businessType} Invoice`}
+                        {submitting ? (isEditMode ? 'Updating...' : 'Saving...') : (isEditMode ? `Update ${businessType} Invoice` : `Save ${businessType} Invoice`)}
                     </Button>
                 </div>
             </form>

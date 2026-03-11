@@ -3,16 +3,17 @@ import React from 'react';
 interface InvoicePrintProps {
     invoice: any;
     businessType: 'BEIL' | 'PI';
+    containerId?: string;
 }
 
-export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, businessType }) => {
+export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, businessType, containerId = 'invoice-print-container' }) => {
     // Helper to format currency
     const fmt = (val: number) => new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0);
 
     const isBEIL = businessType === 'BEIL';
 
     return (
-        <div id="invoice-print-container" className="bg-white p-0 m-0 font-sans text-[8pt] leading-tight" style={{ width: '210mm', minHeight: '297mm', margin: '0 auto', boxSizing: 'border-box' }}>
+        <div id={containerId} className="bg-white p-0 m-0 font-sans text-[8pt] leading-tight" style={{ width: '210mm', minHeight: '297mm', margin: '0 auto', boxSizing: 'border-box' }}>
             {/* Header */}
             <header className="mb-2">
                 <img

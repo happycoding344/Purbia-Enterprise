@@ -94,6 +94,83 @@ class InvoiceController extends Controller
         return response()->json($invoice->load(['customer', 'items', 'lrs', 'attachments', 'billingParty', 'state']));
     }
 
+    public function update(Request $request, Invoice $invoice)
+    {
+        $request->validate([
+            'business_type' => 'required|string|in:BEIL,PI',
+            'invoice_no' => 'required|string|max:255|unique:invoices,invoice_no,' . $invoice->id,
+            'invoice_date' => 'required|date',
+            'billing_party_id' => 'required|exists:billing_parties,id',
+            'customer_id' => 'nullable|exists:customers,id',
+            'delivery_address' => 'nullable|string',
+            'state_id' => 'required|exists:states,id',
+            'state_code' => 'nullable|string',
+            'gst_number' => 'nullable|string',
+            'po_number' => 'nullable|string',
+            'payment_due_date' => 'nullable|date',
+            'subject' => 'nullable|string',
+            'hsn_code' => 'nullable|string',
+
+            // BEIL specific items
+            'items' => 'required_if:business_type,BEIL|array',
+            'items.*.description' => 'required|string',
+            'items.*.sac_code' => 'nullable|string',
+            'items.*.qty' => 'required|numeric',
+            'items.*.unit' => 'required|string',
+            'items.*.rate' => 'required|numeric',
+            'items.*.cgst' => 'nullable|numeric',
+            'items.*.sgst' => 'nullable|numeric',
+
+            // PI specific LRs
+            'lr_ids' => 'required_if:business_type,PI|array',
+            'lr_ids.*' => 'exists:lrs,id',
+
+            // Calculations
+            'amount' => 'required|numeric',
+            'gst_amount' => 'required|numeric',
+            'sgst_amount' => 'required|numeric',
+            'cgst_amount' => 'required|numeric',
+            'total_amount' => 'required|numeric',
+            'total_amount_words' => 'nullable|string',
+
+            'attachments.*' => 'nullable|file|max:51200',
+        ]);
+
+        return DB::transaction(function () use ($request, $invoice) {
+            $invoice->update($request->except(['items', 'lr_ids', 'attachments']));
+
+            // Handle BEIL Items - delete old items and create new ones
+            if ($request->business_type === 'BEIL') {
+                $invoice->items()->delete();
+                foreach ($request->items as $item) {
+                    $item['amount'] = $item['qty'] * $item['rate'];
+                    $item['total'] = $item['amount'] + ($item['cgst'] ?? 0) + ($item['sgst'] ?? 0);
+                    $invoice->items()->create($item);
+                }
+            }
+
+            // Handle PI LRs
+            if ($request->business_type === 'PI') {
+                $invoice->lrs()->sync($request->lr_ids);
+            }
+
+            // Handle Attachments
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    $path = $file->store('invoice_attachments', 'public');
+                    $invoice->attachments()->create([
+                        'file_path' => $path,
+                        'original_name' => $file->getClientOriginalName(),
+                        'file_type' => $file->getMimeType(),
+                        'file_size' => $file->getSize(),
+                    ]);
+                }
+            }
+
+            return response()->json($invoice->load(['items', 'lrs', 'attachments']), 200);
+        });
+    }
+
     public function destroy(Invoice $invoice)
     {
         $invoice->delete();

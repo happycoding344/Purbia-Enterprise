@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/axios';
 import { Input } from '@/components/ui/input';
-import { Trash2, Search, FileText, Download, Edit } from 'lucide-react';
+import { Trash2, Search, FileText, Download, Edit, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { InvoicePrint } from './InvoicePrint';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -34,6 +35,8 @@ export default function InvoiceHistory() {
     const [typeFilter, setTypeFilter] = useState<'ALL' | 'BEIL' | 'PI'>('ALL');
     const [error, setError] = useState('');
     const [previewInvoice, setPreviewInvoice] = useState<any>(null);
+    const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+    const [previewDialogData, setPreviewDialogData] = useState<any>(null);
 
     useEffect(() => {
         api.get('/invoices')
@@ -58,31 +61,82 @@ export default function InvoiceHistory() {
         }
     };
 
+    const mapInvoiceForPrint = (inv: Invoice) => {
+        return {
+            ...inv,
+            billing_party: inv.billing_party?.name || (inv as any).billing_party_id,
+            state: inv.state?.name || '',
+            amount_in_words: inv.total_amount_words,
+            grand_total: inv.total_amount,
+            tax_amount: inv.gst_amount,
+            cgst_total: inv.cgst_amount,
+            sgst_total: inv.sgst_amount,
+            total_amount_before_tax: inv.amount,
+            items: inv.business_type === 'BEIL' ? inv.items : inv.lrs?.map((lr: any) => ({
+                description: `LR No: ${lr.lr_no}, Manifest: ${lr.manifest_no || '-'}`,
+                sac_code: inv.hsn_code,
+                qty: 1,
+                unit: 'Trip',
+                unit_rate: lr.total_amount,
+                amount: lr.total_amount,
+                cgst: (lr.total_amount || 0) * 0.09,
+                sgst: (lr.total_amount || 0) * 0.09,
+                total_amount: (lr.total_amount || 0) * 1.18
+            }))
+        };
+    };
+
+    const handlePreview = (inv: Invoice) => {
+        const printData = mapInvoiceForPrint(inv);
+        setPreviewDialogData(printData);
+        setShowPreviewDialog(true);
+    };
+
+    const handleDownloadFromPreview = async () => {
+        if (!previewDialogData) return;
+
+        try {
+            // Wait for component to render
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            // Get the invoice container
+            const invoiceElement = document.getElementById('invoice-print-container-preview');
+            if (!invoiceElement) {
+                throw new Error('Invoice element not found');
+            }
+
+            // Convert to canvas
+            const canvas = await html2canvas(invoiceElement, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                width: 794,
+                height: 1123
+            });
+
+            // Convert canvas to PDF
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = 210;
+            const pdfHeight = 297;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+            // Download PDF
+            const fileName = `${previewDialogData.business_type}_Invoice_${previewDialogData.invoice_no}_${format(new Date(previewDialogData.invoice_date), 'yyyyMMdd')}.pdf`;
+            pdf.save(fileName);
+
+            // Close preview
+            setShowPreviewDialog(false);
+        } catch (error) {
+            console.error('Failed to generate PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        }
+    };
+
     const handleDownloadPDF = async (inv: Invoice) => {
         try {
-            // Map backend data to printer format
-            const printData = {
-                ...inv,
-                billing_party: inv.billing_party?.name || (inv as any).billing_party_id,
-                state: inv.state?.name || '',
-                amount_in_words: inv.total_amount_words,
-                grand_total: inv.total_amount,
-                tax_amount: inv.gst_amount,
-                cgst_total: inv.cgst_amount,
-                sgst_total: inv.sgst_amount,
-                total_amount_before_tax: inv.amount,
-                items: inv.business_type === 'BEIL' ? inv.items : inv.lrs?.map((lr: any) => ({
-                    description: `LR No: ${lr.lr_no}, Manifest: ${lr.manifest_no || '-'}`,
-                    sac_code: inv.hsn_code,
-                    qty: 1,
-                    unit: 'Trip',
-                    unit_rate: lr.total_amount,
-                    amount: lr.total_amount,
-                    cgst: (lr.total_amount || 0) * 0.09,
-                    sgst: (lr.total_amount || 0) * 0.09,
-                    total_amount: (lr.total_amount || 0) * 1.18
-                }))
-            };
+            const printData = mapInvoiceForPrint(inv);
 
             // Set preview to render component
             setPreviewInvoice(printData);
@@ -237,6 +291,13 @@ export default function InvoiceHistory() {
                                     <td style={{ padding: '12px 16px' }}>
                                         <div style={{ display: 'flex', gap: 6 }}>
                                             <button
+                                                onClick={() => handlePreview(inv)}
+                                                style={{ padding: '6px', borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', color: '#10b981' }}
+                                                title="Preview Invoice"
+                                            >
+                                                <Eye size={14} />
+                                            </button>
+                                            <button
                                                 onClick={() => handleDownloadPDF(inv)}
                                                 style={{ padding: '6px', borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', color: '#3b82f6' }}
                                                 title="Download PDF"
@@ -279,6 +340,34 @@ export default function InvoiceHistory() {
                     </div>
                 ))}
             </div>
+
+            {/* Preview Dialog */}
+            <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Invoice Preview - {previewDialogData?.invoice_no}</DialogTitle>
+                    </DialogHeader>
+                    <div className="mt-4">
+                        {previewDialogData && (
+                            <div style={{ transform: 'scale(0.8)', transformOrigin: 'top center' }}>
+                                <InvoicePrint invoice={previewDialogData} businessType={previewDialogData.business_type} containerId="invoice-print-container-preview" />
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+                        <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
+                            Close
+                        </Button>
+                        <Button
+                            onClick={handleDownloadFromPreview}
+                            style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', color: 'white' }}
+                        >
+                            <Download size={16} className="mr-2" />
+                            Download PDF
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* Hidden invoice component for PDF generation */}
             {previewInvoice && (
