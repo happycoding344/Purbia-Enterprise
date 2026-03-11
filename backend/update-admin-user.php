@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Hash;
 // UPDATE THESE CREDENTIALS AS NEEDED
 // ===================================================================
 $newEmail = 'admin@purbiaenterprise.com';
-$newPassword = 'PurbiaSecure2026!';  // Strong password
+$newPassword = 'Purbia@!2026#';
 $newName = 'Purbia Admin';
 // ===================================================================
 
