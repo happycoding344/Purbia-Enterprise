@@ -62,7 +62,7 @@ class GlobalSearchController extends Controller
         // Search Vehicles
         $vehicles = Vehicle::where('registration_no', 'LIKE', "%{$query}%")
             ->orWhere('owner_name', 'LIKE', "%{$query}%")
-            ->orWhere('driver_name', 'LIKE', "%{$query}%")
+            ->orWhere('party_name', 'LIKE', "%{$query}%")
             ->limit(10)
             ->get()
             ->map(function ($vehicle) {
@@ -70,8 +70,8 @@ class GlobalSearchController extends Controller
                     'id' => $vehicle->id,
                     'type' => 'Vehicle',
                     'title' => "Vehicle: {$vehicle->registration_no}",
-                    'subtitle' => "Owner: {$vehicle->owner_name}",
-                    'details' => "Driver: " . ($vehicle->driver_name ?? 'N/A'),
+                    'subtitle' => "Owner: " . ($vehicle->owner_name ?? 'N/A'),
+                    'details' => "Party: " . ($vehicle->party_name ?? 'N/A'),
                     'url' => '#/vehicle-master',
                 ];
             });
