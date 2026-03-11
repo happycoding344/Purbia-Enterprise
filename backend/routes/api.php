@@ -30,11 +30,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/invoices/{invoice}/pdf-data', [PdfController::class, 'generateInvoice']);
 
-    // Activity Logs
+    // Activity Logs - track all system activities
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);
     Route::get('/activity-logs/dashboard', [ActivityLogController::class, 'dashboard']);
     Route::get('/activity-logs/{modelType}', [ActivityLogController::class, 'byModel']);
 
-    // Global Search
+    // Global Search - search across LRs, Invoices, Vehicles
     Route::get('/search', [GlobalSearchController::class, 'search']);
 });
