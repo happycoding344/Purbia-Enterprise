@@ -28,7 +28,7 @@ class GlobalSearchController extends Controller
         $lrs = Lr::where('lr_no', 'LIKE', "%{$query}%")
             ->orWhere('manifest_no', 'LIKE', "%{$query}%")
             ->orWhere('financial_year', 'LIKE', "%{$query}%")
-            ->with(['vehicleInfo:id,registration_no', 'consignor:id,name', 'consignee:id,name'])
+            ->with(['vehicle:id,registration_no', 'consignor:id,name', 'consignee:id,name'])
             ->limit(10)
             ->get()
             ->map(function ($lr) {
@@ -37,7 +37,7 @@ class GlobalSearchController extends Controller
                     'type' => 'LR',
                     'title' => "LR: {$lr->lr_no}",
                     'subtitle' => "Manifest: {$lr->manifest_no} | {$lr->financial_year}",
-                    'details' => "Vehicle: " . ($lr->vehicleInfo->registration_no ?? 'N/A'),
+                    'details' => "Vehicle: " . ($lr->vehicle->registration_no ?? 'N/A'),
                     'url' => '#/lr-preparation',
                 ];
             });
