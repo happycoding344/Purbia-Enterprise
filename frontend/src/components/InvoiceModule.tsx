@@ -21,12 +21,37 @@ type LRRecord = {
     vehicle?: { registration_no: string };
     items?: { qty: number; rate: number }[];
     total_amount?: number;
+    detention_days?: number;
+    detention_rate?: number;
+    total_detention_amount?: number;
+    distance?: number;
+    inward_time?: string;
+    outward_time?: string;
 };
 
 type InvoiceItem = {
     id: string; description: string; sac_code: string;
     qty: number; unit: string; unit_rate: number;
     amount: number; cgst: number; sgst: number; total_amount: number;
+    actual_qty?: number; // Hidden field for PI - actual quantity used in calculation
+};
+
+type PIInvoiceLineItem = {
+    id: string;
+    lr_id: number;
+    lr_no: string;
+    lr_date: string;
+    manifest_no: string;
+    vehicle_no: string;
+    distance_range: string;
+    qty_display: number; // Display value for user
+    actual_qty: number; // Hidden - actual value for calculation
+    unit: string;
+    rate: number;
+    amount: number;
+    detention_days: number;
+    detention_rate: number;
+    detention_amount: number;
 };
 
 // Static predefined line items from the invoice template
@@ -107,6 +132,7 @@ export default function InvoiceModule() {
             }))
             : initializeBEILItems()
     );
+    const [piLineItems, setPiLineItems] = useState<PIInvoiceLineItem[]>([]);
     const [files, setFiles] = useState<File[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -164,14 +190,75 @@ export default function InvoiceModule() {
         }));
     };
 
+    // Helper function to get distance range description
+    const getDistanceRange = (distance: number): string => {
+        if (distance >= 10 && distance < 20) return '10 To 20';
+        if (distance >= 20 && distance < 50) return '20 To 50';
+        if (distance >= 50 && distance < 60) return '50 To 60';
+        if (distance >= 60 && distance < 70) return '60 To 70';
+        if (distance >= 70 && distance < 80) return '70 To 80';
+        if (distance >= 80 && distance < 90) return '80 To 90';
+        if (distance >= 90) return '90+';
+        return 'Unknown';
+    };
+
+    // Helper function to calculate detention days from inward and outward times
+    const calculateDetentionDays = (inwardTime?: string, outwardTime?: string): number => {
+        if (!inwardTime || !outwardTime) return 0;
+        const inward = new Date(inwardTime);
+        const outward = new Date(outwardTime);
+        const diffMs = outward.getTime() - inward.getTime();
+        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+        // If difference is more than 1 day, detention starts from day 2
+        return Math.max(0, Math.floor(diffDays) - 1);
+    };
+
+    // Update PI line item
+    const updatePILineItem = (id: string, field: keyof PIInvoiceLineItem, val: string | number) => {
+        setPiLineItems(prev => prev.map(item => {
+            if (item.id !== id) return item;
+            const updated = { ...item, [field]: val };
+            // Recalculate amount based on actual_qty (not display qty)
+            updated.amount = updated.actual_qty * updated.rate;
+            // Recalculate detention amount
+            updated.detention_amount = updated.detention_days * updated.detention_rate;
+            return updated;
+        }));
+    };
+
+    // Convert selected LRs to PI line items
+    const convertLRsToPILineItems = () => {
+        const selectedLRData = lrRecords.filter(lr => selectedLRs.includes(lr.id));
+        const lineItems: PIInvoiceLineItem[] = selectedLRData.map(lr => ({
+            id: crypto.randomUUID(),
+            lr_id: lr.id,
+            lr_no: lr.lr_no,
+            lr_date: lr.lr_date,
+            manifest_no: lr.manifest_no || '',
+            vehicle_no: lr.vehicle?.registration_no || '',
+            distance_range: getDistanceRange(lr.distance || 0),
+            qty_display: 1, // Default to 1 trip
+            actual_qty: 1, // Default to 1 for calculation
+            unit: 'Per trip',
+            rate: 0,
+            amount: 0,
+            detention_days: lr.detention_days || calculateDetentionDays(lr.inward_time, lr.outward_time),
+            detention_rate: lr.detention_rate || 0,
+            detention_amount: lr.total_detention_amount || 0,
+        }));
+        setPiLineItems(lineItems);
+        setShowLRPopup(false);
+    };
+
     const { totalAmount, gstAmount, sgstAmount, cgstAmount, grandTotal, amountWords } = useMemo(() => {
         let totalAmount = 0;
         if (businessType === 'BEIL') {
             totalAmount = items.reduce((s, i) => s + (i.amount || 0), 0);
         } else {
-            totalAmount = lrRecords
-                .filter(lr => selectedLRs.includes(lr.id))
-                .reduce((s, lr) => s + (lr.total_amount || 0), 0);
+            // For PI, calculate from piLineItems (transportation + detention)
+            const transportationTotal = piLineItems.reduce((s, i) => s + (i.amount || 0), 0);
+            const detentionTotal = piLineItems.reduce((s, i) => s + (i.detention_amount || 0), 0);
+            totalAmount = transportationTotal + detentionTotal;
         }
         const sgstAmount = totalAmount * 0.09;
         const cgstAmount = totalAmount * 0.09;
@@ -179,7 +266,7 @@ export default function InvoiceModule() {
         const grandTotal = totalAmount + gstAmount;
         const amountWords = numberToIndianWords(Math.round(grandTotal));
         return { totalAmount, gstAmount, sgstAmount, cgstAmount, grandTotal, amountWords };
-    }, [items, selectedLRs, businessType, lrRecords]);
+    }, [items, piLineItems, businessType]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -208,7 +295,22 @@ export default function InvoiceModule() {
                     });
                 });
             } else {
+                // For PI, send both LR IDs and detailed line item data
                 selectedLRs.forEach((id, i) => fd.append(`lr_ids[${i}]`, String(id)));
+
+                // Send PI line items with all details
+                piLineItems.forEach((item, i) => {
+                    fd.append(`pi_items[${i}][lr_id]`, String(item.lr_id));
+                    fd.append(`pi_items[${i}][lr_no]`, item.lr_no);
+                    fd.append(`pi_items[${i}][distance_range]`, item.distance_range);
+                    fd.append(`pi_items[${i}][qty_display]`, String(item.qty_display));
+                    fd.append(`pi_items[${i}][actual_qty]`, String(item.actual_qty));
+                    fd.append(`pi_items[${i}][rate]`, String(item.rate));
+                    fd.append(`pi_items[${i}][amount]`, String(item.amount));
+                    fd.append(`pi_items[${i}][detention_days]`, String(item.detention_days));
+                    fd.append(`pi_items[${i}][detention_rate]`, String(item.detention_rate));
+                    fd.append(`pi_items[${i}][detention_amount]`, String(item.detention_amount));
+                });
             }
 
             files.forEach(f => fd.append('attachments[]', f));
@@ -532,7 +634,7 @@ export default function InvoiceModule() {
                                         </table>
                                         <div style={{ padding: 16, borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <span style={{ fontSize: 13, color: '#64748b' }}>{selectedLRs.length} LRs selected</span>
-                                            <Button onClick={() => setShowLRPopup(false)}>Confirm Selection</Button>
+                                            <Button onClick={convertLRsToPILineItems}>Confirm Selection</Button>
                                         </div>
                                     </div>
                                 ) : (
@@ -630,24 +732,109 @@ export default function InvoiceModule() {
                         </div>
                     ) : (
                         <div>
-                            {selectedLRs.length > 0 ? (
-                                <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                    <thead>
-                                        <tr><th>Sr.</th><th>Date</th><th>LR No.</th><th>Manifest</th><th>Vehicle No.</th><th>Amount (₹)</th></tr>
-                                    </thead>
-                                    <tbody>
-                                        {lrRecords.filter(lr => selectedLRs.includes(lr.id)).map((lr, idx) => (
-                                            <tr key={lr.id}>
-                                                <td style={{ padding: '10px 12px' }}>{idx + 1}</td>
-                                                <td style={{ padding: '10px 12px' }}>{lr.lr_date}</td>
-                                                <td style={{ padding: '10px 12px', fontWeight: 600 }}>{lr.lr_no}</td>
-                                                <td style={{ padding: '10px 12px' }}>{lr.manifest_no || '-'}</td>
-                                                <td style={{ padding: '10px 12px' }}>{lr.vehicle?.registration_no || '-'}</td>
-                                                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }}>₹{(lr.total_amount || 0).toLocaleString('en-IN')}</td>
+                            {piLineItems.length > 0 ? (
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                                        <thead>
+                                            <tr>
+                                                <th>Sr.</th>
+                                                <th>Date</th>
+                                                <th>LR No.</th>
+                                                <th>Manifest</th>
+                                                <th>Vehicle No.</th>
+                                                <th>Distance</th>
+                                                <th>Qty<br/><small style={{fontWeight: 400, color: '#94a3b8'}}>(Display)</small></th>
+                                                <th>Actual Qty<br/><small style={{fontWeight: 400, color: '#94a3b8'}}>(Hidden)</small></th>
+                                                <th>Rate (₹)</th>
+                                                <th>Amount (₹)</th>
+                                                <th>Detention<br/>(Days)</th>
+                                                <th>Det. Rate<br/>(₹/day)</th>
+                                                <th>Det. Amt<br/>(₹)</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {piLineItems.map((item, idx) => (
+                                                <tr key={item.id} style={{ background: idx % 2 === 0 ? '#f8fafc' : 'white' }}>
+                                                    <td style={{ padding: '8px 10px', textAlign: 'center', color: '#64748b', fontWeight: 600 }}>{idx + 1}</td>
+                                                    <td style={{ padding: '8px 10px', fontSize: 11 }}>{item.lr_date}</td>
+                                                    <td style={{ padding: '8px 10px', fontWeight: 600, color: '#3b82f6' }}>{item.lr_no}</td>
+                                                    <td style={{ padding: '8px 10px', fontSize: 11 }}>{item.manifest_no || '-'}</td>
+                                                    <td style={{ padding: '8px 10px', fontSize: 11 }}>{item.vehicle_no || '-'}</td>
+                                                    <td style={{ padding: '8px 10px', fontSize: 11, textAlign: 'center' }}>{item.distance_range}</td>
+                                                    <td style={{ padding: '4px 6px' }}>
+                                                        <Input
+                                                            type="number"
+                                                            value={item.qty_display}
+                                                            onChange={(e) => updatePILineItem(item.id, 'qty_display', +e.target.value)}
+                                                            style={{ width: 60, textAlign: 'center', fontSize: 11 }}
+                                                        />
+                                                    </td>
+                                                    <td style={{ padding: '4px 6px' }}>
+                                                        <Input
+                                                            type="number"
+                                                            value={item.actual_qty}
+                                                            onChange={(e) => updatePILineItem(item.id, 'actual_qty', +e.target.value)}
+                                                            style={{ width: 70, textAlign: 'center', fontSize: 11, background: '#fef3c7', border: '1px solid #fbbf24' }}
+                                                            title="This value is used for calculation"
+                                                        />
+                                                    </td>
+                                                    <td style={{ padding: '4px 6px' }}>
+                                                        <Input
+                                                            type="number"
+                                                            value={item.rate}
+                                                            onChange={(e) => updatePILineItem(item.id, 'rate', +e.target.value)}
+                                                            style={{ width: 80, textAlign: 'right', fontSize: 11 }}
+                                                        />
+                                                    </td>
+                                                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600 }}>₹{item.amount.toFixed(2)}</td>
+                                                    <td style={{ padding: '4px 6px' }}>
+                                                        <Input
+                                                            type="number"
+                                                            value={item.detention_days}
+                                                            onChange={(e) => updatePILineItem(item.id, 'detention_days', +e.target.value)}
+                                                            style={{ width: 55, textAlign: 'center', fontSize: 11 }}
+                                                        />
+                                                    </td>
+                                                    <td style={{ padding: '4px 6px' }}>
+                                                        <Input
+                                                            type="number"
+                                                            value={item.detention_rate}
+                                                            onChange={(e) => updatePILineItem(item.id, 'detention_rate', +e.target.value)}
+                                                            style={{ width: 70, textAlign: 'right', fontSize: 11 }}
+                                                        />
+                                                    </td>
+                                                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600, color: '#ea580c' }}>₹{item.detention_amount.toFixed(2)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style={{ background: '#f1f5f9', fontWeight: 700 }}>
+                                                <td colSpan={6} style={{ padding: '10px 12px', textAlign: 'right' }}>Totals:</td>
+                                                <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                                                    {piLineItems.reduce((s, i) => s + i.qty_display, 0)}
+                                                </td>
+                                                <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                                                    {piLineItems.reduce((s, i) => s + i.actual_qty, 0)}
+                                                </td>
+                                                <td></td>
+                                                <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                                                    ₹{piLineItems.reduce((s, i) => s + i.amount, 0).toFixed(2)}
+                                                </td>
+                                                <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                                                    {piLineItems.reduce((s, i) => s + i.detention_days, 0)}
+                                                </td>
+                                                <td></td>
+                                                <td style={{ padding: '10px 12px', textAlign: 'right', color: '#ea580c' }}>
+                                                    ₹{piLineItems.reduce((s, i) => s + i.detention_amount, 0).toFixed(2)}
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                    <div style={{ marginTop: 12, padding: 12, background: '#fef3c7', border: '1px solid #fbbf24', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                                        <strong>Note:</strong> The "Actual Qty" column (highlighted in yellow) is used for amount calculation (Actual Qty × Rate).
+                                        The "Qty (Display)" is shown to users for reference. Detention is auto-calculated from LR inward/outward times.
+                                    </div>
+                                </div>
                             ) : (
                                 <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', border: '2px dashed #e2e8f0', borderRadius: 12 }}>
                                     Click "Select LRs" to choose LR records for this invoice
