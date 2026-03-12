@@ -45,6 +45,19 @@ class InvoiceController extends Controller
             'lr_ids' => 'required_if:business_type,PI|array',
             'lr_ids.*' => 'exists:lrs,id',
 
+            // PI specific line items
+            'pi_items' => 'nullable|array',
+            'pi_items.*.lr_id' => 'required|exists:lrs,id',
+            'pi_items.*.lr_no' => 'required|string',
+            'pi_items.*.distance_range' => 'required|string',
+            'pi_items.*.qty_display' => 'required|numeric',
+            'pi_items.*.actual_qty' => 'required|numeric',
+            'pi_items.*.rate' => 'required|numeric',
+            'pi_items.*.amount' => 'required|numeric',
+            'pi_items.*.detention_days' => 'nullable|numeric',
+            'pi_items.*.detention_rate' => 'nullable|numeric',
+            'pi_items.*.detention_amount' => 'nullable|numeric',
+
             // Calculations
             'amount' => 'required|numeric',
             'gst_amount' => 'required|numeric',
@@ -57,7 +70,7 @@ class InvoiceController extends Controller
         ]);
 
         return DB::transaction(function () use ($request) {
-            $invoice = Invoice::create($request->except(['items', 'lr_ids', 'attachments']));
+            $invoice = Invoice::create($request->except(['items', 'lr_ids', 'pi_items', 'attachments']));
 
             // Handle BEIL Items
             if ($request->business_type === 'BEIL') {
@@ -68,9 +81,34 @@ class InvoiceController extends Controller
                 }
             }
 
-            // Handle PI LRs
+            // Handle PI LRs and Items
             if ($request->business_type === 'PI') {
                 $invoice->lrs()->sync($request->lr_ids);
+
+                // Store PI line items with detailed information
+                if ($request->has('pi_items') && is_array($request->pi_items)) {
+                    foreach ($request->pi_items as $piItem) {
+                        $invoice->items()->create([
+                            'lr_id' => $piItem['lr_id'],
+                            'lr_no' => $piItem['lr_no'],
+                            'distance_range' => $piItem['distance_range'],
+                            'description' => "Transportation for LR {$piItem['lr_no']} ({$piItem['distance_range']} Kms)",
+                            'sac_code' => '996511',
+                            'qty' => $piItem['qty_display'], // Display quantity
+                            'qty_display' => $piItem['qty_display'],
+                            'actual_qty' => $piItem['actual_qty'], // Actual quantity for calculation
+                            'unit' => 'Per trip',
+                            'rate' => $piItem['rate'],
+                            'amount' => $piItem['amount'], // Calculated from actual_qty * rate
+                            'cgst' => $piItem['amount'] * 0.09,
+                            'sgst' => $piItem['amount'] * 0.09,
+                            'total' => $piItem['amount'] * 1.18,
+                            'detention_days' => $piItem['detention_days'] ?? 0,
+                            'detention_rate' => $piItem['detention_rate'] ?? 0,
+                            'detention_amount' => $piItem['detention_amount'] ?? 0,
+                        ]);
+                    }
+                }
             }
 
             // Handle Attachments

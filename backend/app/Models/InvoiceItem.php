@@ -21,6 +21,15 @@ class InvoiceItem extends Model
         'cgst',
         'sgst',
         'total',
+        // PI Industries specific fields
+        'lr_id',
+        'lr_no',
+        'distance_range',
+        'qty_display',
+        'actual_qty',
+        'detention_days',
+        'detention_rate',
+        'detention_amount',
     ];
 
     protected $casts = [
@@ -30,6 +39,11 @@ class InvoiceItem extends Model
         'cgst' => 'decimal:2',
         'sgst' => 'decimal:2',
         'total' => 'decimal:2',
+        'qty_display' => 'decimal:2',
+        'actual_qty' => 'decimal:2',
+        'detention_days' => 'decimal:2',
+        'detention_rate' => 'decimal:2',
+        'detention_amount' => 'decimal:2',
     ];
 
     public function invoice(): BelongsTo
