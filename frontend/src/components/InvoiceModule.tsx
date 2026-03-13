@@ -244,14 +244,15 @@ export default function InvoiceModule() {
             amount: 0,
             detention_days: lr.detention_days || calculateDetentionDays(lr.inward_time, lr.outward_time),
             detention_rate: lr.detention_rate || 0,
-            detention_amount: lr.total_detention_amount || 0,
+            detention_amount: lr.total_detention_amount || (lr.detention_days || calculateDetentionDays(lr.inward_time, lr.outward_time)) * (lr.detention_rate || 0),
         }));
         setPiLineItems(lineItems);
         setShowLRPopup(false);
     };
 
-    const { totalAmount, gstAmount, sgstAmount, cgstAmount, grandTotal, amountWords } = useMemo(() => {
+    const { totalAmount, gstAmount, sgstAmount, cgstAmount, grandTotal, amountWords, totalActualQty } = useMemo(() => {
         let totalAmount = 0;
+        let totalActualQty = 0;
         if (businessType === 'BEIL') {
             totalAmount = items.reduce((s, i) => s + (i.amount || 0), 0);
         } else {
@@ -259,13 +260,14 @@ export default function InvoiceModule() {
             const transportationTotal = piLineItems.reduce((s, i) => s + (i.amount || 0), 0);
             const detentionTotal = piLineItems.reduce((s, i) => s + (i.detention_amount || 0), 0);
             totalAmount = transportationTotal + detentionTotal;
+            totalActualQty = piLineItems.reduce((s, i) => s + (i.actual_qty || 0), 0);
         }
         const sgstAmount = totalAmount * 0.09;
         const cgstAmount = totalAmount * 0.09;
         const gstAmount = sgstAmount + cgstAmount;
         const grandTotal = totalAmount + gstAmount;
         const amountWords = numberToIndianWords(Math.round(grandTotal));
-        return { totalAmount, gstAmount, sgstAmount, cgstAmount, grandTotal, amountWords };
+        return { totalAmount, gstAmount, sgstAmount, cgstAmount, grandTotal, amountWords, totalActualQty };
     }, [items, piLineItems, businessType]);
 
     const handleSubmit = async (e: React.FormEvent) => {

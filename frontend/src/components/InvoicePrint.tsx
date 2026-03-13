@@ -70,7 +70,10 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, businessTyp
                     <thead>
                         <tr className="bg-gray-100">
                             <th className="border border-black p-0.5 text-center w-8">Sr. No.</th>
-                            <th className="border border-black p-0.5 text-left text-[6.5pt]">Item Description</th>
+                            <th className="border border-black p-0.5 text-left text-[6.5pt]">
+                                {isBEIL ? 'Item Description' : 'Detail of Vehicles (Date, LR No, Manifest, Vehicle)'}
+                            </th>
+                            {!isBEIL && <th className="border border-black p-0.5 text-left text-[6.5pt]">Particulars of Service</th>}
                             <th className="border border-black p-0.5 text-center">SAC Code</th>
                             <th className="border border-black p-0.5 text-center">Qty</th>
                             <th className="border border-black p-0.5 text-center">Unit</th>
@@ -83,23 +86,64 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, businessTyp
                     </thead>
                     <tbody>
                         {invoice.items && invoice.items.length > 0 ? (
-                            invoice.items.map((item: any, idx: number) => (
-                                <tr key={idx}>
-                                    <td className="border border-black p-0.5 text-center">{idx + 1}</td>
-                                    <td className="border border-black p-0.5 text-[6.5pt]">{item.description}</td>
-                                    <td className="border border-black p-0.5 text-center">{item.sac_code}</td>
-                                    <td className="border border-black p-0.5 text-center">{item.qty}</td>
-                                    <td className="border border-black p-0.5 text-center">{item.unit}</td>
-                                    <td className="border border-black p-0.5 text-right">{fmt(item.unit_rate)}</td>
-                                    <td className="border border-black p-0.5 text-right">{fmt(item.amount)}</td>
-                                    <td className="border border-black p-0.5 text-right">{fmt(item.cgst)}</td>
-                                    <td className="border border-black p-0.5 text-right">{fmt(item.sgst)}</td>
-                                    <td className="border border-black p-0.5 text-right">{fmt(item.total_amount)}</td>
-                                </tr>
-                            ))
+                            <>
+                                {invoice.items.map((item: any, idx: number) => (
+                                    <tr key={idx}>
+                                        <td className="border border-black p-0.5 text-center">{idx + 1}</td>
+                                        <td className="border border-black p-0.5 text-[6.5pt]">
+                                            {isBEIL ? (
+                                                item.description
+                                            ) : (
+                                                <div>
+                                                    <strong>Date:</strong> {item.lr_date || '-'}<br />
+                                                    <strong>LR:</strong> {item.lr_no || '-'}<br />
+                                                    <strong>Manif:</strong> {item.manifest_no || '-'}<br />
+                                                    <strong>Veh:</strong> {item.vehicle_no || '-'}
+                                                </div>
+                                            )}
+                                        </td>
+                                        {!isBEIL && (
+                                            <td className="border border-black p-0.5 text-[6.5pt]">
+                                                {item.description}
+                                                {item.detention_days > 0 && (
+                                                    <div className="mt-1 font-bold text-orange-700">
+                                                        Detention: {item.detention_days} Days @ ₹{item.detention_rate}/day (₹{item.detention_amount})
+                                                    </div>
+                                                )}
+                                            </td>
+                                        )}
+                                        <td className="border border-black p-0.5 text-center">{item.sac_code}</td>
+                                        <td className="border border-black p-0.5 text-center">
+                                            {isBEIL ? item.qty : (item.actual_qty || item.qty)}
+                                        </td>
+                                        <td className="border border-black p-0.5 text-center">{item.unit}</td>
+                                        <td className="border border-black p-0.5 text-right">{fmt(item.unit_rate || item.rate)}</td>
+                                        <td className="border border-black p-0.5 text-right">{fmt(item.amount)}</td>
+                                        <td className="border border-black p-0.5 text-right">{fmt(item.cgst)}</td>
+                                        <td className="border border-black p-0.5 text-right">{fmt(item.sgst)}</td>
+                                        <td className="border border-black p-0.5 text-right">{fmt(item.total || item.total_amount)}</td>
+                                    </tr>
+                                ))}
+                                {/* PI Industries Totals Row */}
+                                {!isBEIL && (
+                                    <tr className="bg-gray-50 font-bold">
+                                        <td className="border border-black p-1 text-right" colSpan={3}>TOTAL:</td>
+                                        <td className="border border-black p-1 text-center font-bold">-</td>
+                                        <td className="border border-black p-1 text-center font-bold">
+                                            {invoice.items.reduce((s: number, i: any) => s + (parseFloat(i.actual_qty) || 0), 0).toFixed(2)}
+                                        </td>
+                                        <td className="border border-black p-1 text-center">-</td>
+                                        <td className="border border-black p-1 text-right">-</td>
+                                        <td className="border border-black p-1 text-right">{fmt(invoice.total_amount_before_tax || invoice.amount)}</td>
+                                        <td className="border border-black p-1 text-right">{fmt(invoice.cgst_total || (invoice.tax_amount / 2))}</td>
+                                        <td className="border border-black p-1 text-right">{fmt(invoice.sgst_total || (invoice.tax_amount / 2))}</td>
+                                        <td className="border border-black p-1 text-right">{fmt(invoice.grand_total || invoice.total_amount)}</td>
+                                    </tr>
+                                )}
+                            </>
                         ) : (
                             <tr>
-                                <td colSpan={10} className="border border-black p-2 text-center text-gray-400 italic">No items listed</td>
+                                <td colSpan={isBEIL ? 10 : 11} className="border border-black p-2 text-center text-gray-400 italic">No items listed</td>
                             </tr>
                         )}
                     </tbody>
