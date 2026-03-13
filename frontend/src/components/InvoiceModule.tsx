@@ -384,8 +384,8 @@ export default function InvoiceModule() {
             setSuccess(true);
             setTimeout(() => {
                 setSuccess(false);
-                // Redirect to invoice history after successful save
-                window.location.hash = '#/invoice-history';
+                // Redirect to invoice history after successful save using proper path
+                window.location.href = '/invoice-history';
             }, 2000);
         } catch (err: any) {
             console.error('Invoice save error:', err);

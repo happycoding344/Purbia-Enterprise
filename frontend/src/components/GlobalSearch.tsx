@@ -63,7 +63,7 @@ export function GlobalSearch() {
     };
 
     const handleResultClick = (url: string) => {
-        window.location.hash = url;
+        window.location.href = url;
         setShowResults(false);
         setQuery('');
     };

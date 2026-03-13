@@ -38,7 +38,7 @@ class GlobalSearchController extends Controller
                     'title' => "LR: {$lr->lr_no}",
                     'subtitle' => "Manifest: {$lr->manifest_no} | {$lr->financial_year}",
                     'details' => "Vehicle: " . ($lr->vehicle->registration_no ?? 'N/A'),
-                    'url' => '#/lr-preparation',
+                    'url' => '/lr-preparation',
                 ];
             });
 
@@ -55,7 +55,7 @@ class GlobalSearchController extends Controller
                     'title' => "Invoice: {$invoice->invoice_no}",
                     'subtitle' => "{$invoice->business_type} | " . ($invoice->billingParty->name ?? 'N/A'),
                     'details' => "Total: ₹" . number_format($invoice->total_amount, 2),
-                    'url' => '#/invoice-history',
+                    'url' => '/invoice-history',
                 ];
             });
 
@@ -72,7 +72,7 @@ class GlobalSearchController extends Controller
                     'title' => "Vehicle: {$vehicle->registration_no}",
                     'subtitle' => "Owner: " . ($vehicle->owner_name ?? 'N/A'),
                     'details' => "Party: " . ($vehicle->party_name ?? 'N/A'),
-                    'url' => '#/vehicle-master',
+                    'url' => '/vehicle-master',
                 ];
             });
 

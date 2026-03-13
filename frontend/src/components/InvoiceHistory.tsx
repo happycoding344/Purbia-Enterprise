@@ -188,11 +188,8 @@ export default function InvoiceHistory() {
             // Store invoice in localStorage for editing
             localStorage.setItem('editInvoice', JSON.stringify(fullInvoice));
 
-            // Navigate to Generate Invoice page
-            window.location.hash = '#/generate-invoice';
-
-            // Reload to trigger the edit mode
-            window.location.reload();
+            // Navigate to Generate Invoice page using proper path
+            window.location.href = '/generate-invoice';
         } catch (error) {
             console.error('Failed to load invoice for editing:', error);
             alert('Failed to load invoice details for editing');
