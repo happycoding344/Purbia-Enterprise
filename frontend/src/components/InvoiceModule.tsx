@@ -294,7 +294,7 @@ export default function InvoiceModule() {
         const cgstAmount = totalAmount * 0.09;
         const gstAmount = sgstAmount + cgstAmount;
         const grandTotal = totalAmount + gstAmount;
-        const amountWords = numberToIndianWords(Math.round(grandTotal));
+        const amountWords = isNaN(grandTotal) ? 'ZERO ONLY' : numberToIndianWords(Math.round(grandTotal));
         return { totalAmount, gstAmount, sgstAmount, cgstAmount, grandTotal, amountWords, totalActualQty };
     }, [items, piLineItems, businessType]);
 
@@ -737,10 +737,10 @@ export default function InvoiceModule() {
                                                             style={{ width: 100 }}
                                                         />
                                                     </td>
-                                                    <td style={{ padding: '8px 12px', fontWeight: 600, textAlign: 'right' }}>₹{item.amount.toFixed(2)}</td>
-                                                    <td style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b' }}>₹{item.cgst.toFixed(2)}</td>
-                                                    <td style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b' }}>₹{item.sgst.toFixed(2)}</td>
-                                                    <td style={{ padding: '8px 12px', fontWeight: 700, textAlign: 'right', color: '#0f172a' }}>₹{item.total_amount.toFixed(2)}</td>
+                                                    <td style={{ padding: '8px 12px', fontWeight: 600, textAlign: 'right' }}>₹{(item.amount || 0).toFixed(2)}</td>
+                                                    <td style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b' }}>₹{(item.cgst || 0).toFixed(2)}</td>
+                                                    <td style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b' }}>₹{(item.sgst || 0).toFixed(2)}</td>
+                                                    <td style={{ padding: '8px 12px', fontWeight: 700, textAlign: 'right', color: '#0f172a' }}>₹{(item.total_amount || 0).toFixed(2)}</td>
                                                     <td style={{ padding: '4px 8px', textAlign: 'center' }}>
                                                         {!isStaticRow && (
                                                             <button type="button" onClick={() => setItems(p => p.filter(i => i.id !== item.id))}
@@ -816,7 +816,7 @@ export default function InvoiceModule() {
                                                             style={{ width: 80, textAlign: 'right', fontSize: 11 }}
                                                         />
                                                     </td>
-                                                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600 }}>₹{item.amount.toFixed(2)}</td>
+                                                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600 }}>₹{(item.amount || 0).toFixed(2)}</td>
                                                     <td style={{ padding: '4px 6px' }}>
                                                         <Input
                                                             type="number"
@@ -833,7 +833,7 @@ export default function InvoiceModule() {
                                                             style={{ width: 70, textAlign: 'right', fontSize: 11 }}
                                                         />
                                                     </td>
-                                                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600, color: '#ea580c' }}>₹{item.detention_amount.toFixed(2)}</td>
+                                                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600, color: '#ea580c' }}>₹{(item.detention_amount || 0).toFixed(2)}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -841,21 +841,21 @@ export default function InvoiceModule() {
                                             <tr style={{ background: '#f1f5f9', fontWeight: 700 }}>
                                                 <td colSpan={6} style={{ padding: '10px 12px', textAlign: 'right' }}>Totals:</td>
                                                 <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                                                    {piLineItems.reduce((s, i) => s + i.qty_display, 0)}
+                                                    {piLineItems.reduce((s, i) => s + (i.qty_display || 0), 0)}
                                                 </td>
                                                 <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                                                    {piLineItems.reduce((s, i) => s + i.actual_qty, 0)}
+                                                    {piLineItems.reduce((s, i) => s + (i.actual_qty || 0), 0)}
                                                 </td>
                                                 <td></td>
                                                 <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                                                    ₹{piLineItems.reduce((s, i) => s + i.amount, 0).toFixed(2)}
+                                                    ₹{piLineItems.reduce((s, i) => s + (i.amount || 0), 0).toFixed(2)}
                                                 </td>
                                                 <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                                                    {piLineItems.reduce((s, i) => s + i.detention_days, 0)}
+                                                    {piLineItems.reduce((s, i) => s + (i.detention_days || 0), 0)}
                                                 </td>
                                                 <td></td>
                                                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#ea580c' }}>
-                                                    ₹{piLineItems.reduce((s, i) => s + i.detention_amount, 0).toFixed(2)}
+                                                    ₹{piLineItems.reduce((s, i) => s + (i.detention_amount || 0), 0).toFixed(2)}
                                                 </td>
                                             </tr>
                                         </tfoot>
@@ -888,12 +888,12 @@ export default function InvoiceModule() {
                                 ].map(row => (
                                     <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #e2e8f0', fontSize: 13 }}>
                                         <span style={{ color: '#64748b' }}>{row.label}</span>
-                                        <span style={{ fontWeight: 600 }}>₹{row.value.toFixed(2)}</span>
+                                        <span style={{ fontWeight: 600 }}>₹{(row.value || 0).toFixed(2)}</span>
                                     </div>
                                 ))}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 16px', background: 'linear-gradient(135deg, #0f172a, #1e3a8a)', color: 'white' }}>
                                     <span style={{ fontWeight: 700, fontSize: 15 }}>Total Amount</span>
-                                    <span style={{ fontWeight: 800, fontSize: 17 }}>₹{grandTotal.toFixed(2)}</span>
+                                    <span style={{ fontWeight: 800, fontSize: 17 }}>₹{(grandTotal || 0).toFixed(2)}</span>
                                 </div>
                             </div>
                             <div style={{ marginTop: 12, padding: 14, background: '#f0f9ff', borderRadius: 10, border: '1px solid #bae6fd', fontSize: 12, color: '#0369a1' }}>
@@ -976,10 +976,10 @@ function BEILItemPopup({ onAdd }: { onAdd: (item: InvoiceItem) => void }) {
                 <div><Label>Unit Rate (₹)</Label><Input className="mt-1" type="number" value={item.unit_rate} onChange={e => updateField('unit_rate', +e.target.value)} /></div>
             </div>
             <div style={{ marginTop: 16, padding: 12, background: '#f8fafc', borderRadius: 10, fontSize: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span>Amount:</span><strong>₹{item.amount.toFixed(2)}</strong></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span>CGST 9%:</span><span>₹{item.cgst.toFixed(2)}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span>SGST 9%:</span><span>₹{item.sgst.toFixed(2)}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, marginTop: 8, paddingTop: 8, borderTop: '1px solid #e2e8f0' }}><span>Total:</span><span>₹{item.total_amount.toFixed(2)}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span>Amount:</span><strong>₹{(item.amount || 0).toFixed(2)}</strong></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span>CGST 9%:</span><span>₹{(item.cgst || 0).toFixed(2)}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span>SGST 9%:</span><span>₹{(item.sgst || 0).toFixed(2)}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, marginTop: 8, paddingTop: 8, borderTop: '1px solid #e2e8f0' }}><span>Total:</span><span>₹{(item.total_amount || 0).toFixed(2)}</span></div>
             </div>
             <Button className="mt-4 w-full" onClick={() => onAdd(item)} disabled={!item.description}>Add Item</Button>
         </div>
