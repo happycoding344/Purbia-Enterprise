@@ -144,7 +144,30 @@ export default function InvoiceModule() {
             }))
             : initializeBEILItems()
     );
-    const [piLineItems, setPiLineItems] = useState<PIInvoiceLineItem[]>([]);
+    const [piLineItems, setPiLineItems] = useState<PIInvoiceLineItem[]>(
+        editInvoice?.items && editInvoice.business_type === 'PI'
+            ? editInvoice.items.map((item: any) => {
+                const lrData = editInvoice.lrs?.find((lr: any) => lr.id === item.lr_id);
+                return {
+                    id: item.id || generateId(),
+                    lr_id: item.lr_id,
+                    lr_no: item.lr_no,
+                    lr_date: lrData?.lr_date || '',
+                    manifest_no: lrData?.manifest_no || '',
+                    vehicle_no: lrData?.vehicle?.registration_no || lrData?.vehicle_no || '',
+                    distance_range: item.distance_range || '',
+                    qty_display: item.qty_display || item.qty || 0,
+                    actual_qty: item.actual_qty || item.qty || 0,
+                    unit: item.unit || 'Per trip',
+                    rate: item.rate || 0,
+                    amount: item.amount || 0,
+                    detention_days: item.detention_days || 0,
+                    detention_rate: item.detention_rate || 0,
+                    detention_amount: item.detention_amount || 0,
+                };
+            })
+            : []
+    );
     const [files, setFiles] = useState<File[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
