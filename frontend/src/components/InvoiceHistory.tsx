@@ -8,6 +8,7 @@ import { InvoicePrint } from './InvoicePrint';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
+import InvoiceModule from './InvoiceModule';
 
 type Invoice = {
     id: number;
@@ -37,12 +38,19 @@ export default function InvoiceHistory() {
     const [previewInvoice, setPreviewInvoice] = useState<any>(null);
     const [showPreviewDialog, setShowPreviewDialog] = useState(false);
     const [previewDialogData, setPreviewDialogData] = useState<any>(null);
+    const [showEditDialog, setShowEditDialog] = useState(false);
+    const [editInvoiceData, setEditInvoiceData] = useState<any>(null);
 
-    useEffect(() => {
+    const fetchInvoices = () => {
+        setLoading(true);
         api.get('/invoices')
             .then(r => setInvoices(r.data))
             .catch(() => setError('Failed to load invoices'))
             .finally(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        fetchInvoices();
     }, []);
 
     const filtered = invoices.filter(inv => {
@@ -185,15 +193,21 @@ export default function InvoiceHistory() {
             const response = await api.get(`/invoices/${inv.id}`);
             const fullInvoice = response.data;
 
-            // Store invoice in localStorage for editing
-            localStorage.setItem('editInvoice', JSON.stringify(fullInvoice));
-
-            // Navigate to Generate Invoice page using proper path
-            window.location.href = '/generate-invoice';
+            // Clear localStorage to avoid conflict with standalone page
+            localStorage.removeItem('editInvoice');
+            
+            setEditInvoiceData(fullInvoice);
+            setShowEditDialog(true);
         } catch (error) {
             console.error('Failed to load invoice for editing:', error);
             alert('Failed to load invoice details for editing');
         }
+    };
+
+    const handleEditSuccess = () => {
+        setShowEditDialog(false);
+        setEditInvoiceData(null);
+        fetchInvoices();
     };
 
     if (loading) {
@@ -362,6 +376,26 @@ export default function InvoiceHistory() {
                             <Download size={16} className="mr-2" />
                             Download PDF
                         </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Dialog */}
+            <Dialog open={showEditDialog} onOpenChange={(open) => {
+                setShowEditDialog(open);
+                if (!open) setEditInvoiceData(null);
+            }}>
+                <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-y-auto p-0">
+                    <DialogHeader className="p-6 pb-0">
+                        <DialogTitle>Edit Invoice - {editInvoiceData?.invoice_no}</DialogTitle>
+                    </DialogHeader>
+                    <div className="p-6">
+                        {editInvoiceData && (
+                            <InvoiceModule
+                                editInvoiceOverride={editInvoiceData}
+                                onSuccess={handleEditSuccess}
+                            />
+                        )}
                     </div>
                 </DialogContent>
             </Dialog>

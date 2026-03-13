@@ -116,10 +116,10 @@ const initializeBEILItems = (): InvoiceItem[] => {
     }));
 };
 
-export default function InvoiceModule() {
-    // Check for edit invoice from localStorage
+export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { editInvoiceOverride?: any, onSuccess?: () => void }) {
+    // Check for edit invoice from localStorage or props
     const editInvoiceData = localStorage.getItem('editInvoice');
-    const editInvoice = editInvoiceData ? JSON.parse(editInvoiceData) : null;
+    const editInvoice = editInvoiceOverride || (editInvoiceData ? JSON.parse(editInvoiceData) : null);
     const isEditMode = !!editInvoice;
 
     const [businessType, setBusinessType] = useState<'BEIL' | 'PI'>(editInvoice?.business_type || 'BEIL');
@@ -384,8 +384,12 @@ export default function InvoiceModule() {
             setSuccess(true);
             setTimeout(() => {
                 setSuccess(false);
-                // Redirect to invoice history after successful save using proper path
-                window.location.href = '/invoice-history';
+                if (onSuccess) {
+                    onSuccess();
+                } else {
+                    // Redirect to invoice history after successful save using proper path
+                    window.location.href = '/invoice-history';
+                }
             }, 2000);
         } catch (err: any) {
             console.error('Invoice save error:', err);
