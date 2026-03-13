@@ -15,6 +15,18 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 
+// Safe UUID fallback for non-secure contexts or older browsers
+const generateId = () => {
+    try {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        throw new Error('crypto.randomUUID not available');
+    } catch (e) {
+        return 'id-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    }
+};
+
 type BillingParty = { id: number; name: string };
 type LRRecord = {
     id: number; lr_no: string; lr_date: string; manifest_no: string;
@@ -84,14 +96,14 @@ const STATIC_LINE_ITEMS = [
 ];
 
 const emptyItem = (): InvoiceItem => ({
-    id: crypto.randomUUID(), description: '', sac_code: '', qty: 0,
+    id: generateId(), description: '', sac_code: '', qty: 0,
     unit: 'KL', unit_rate: 0, amount: 0, cgst: 0, sgst: 0, total_amount: 0
 });
 
 // Initialize 5 pre-filled BEIL items
 const initializeBEILItems = (): InvoiceItem[] => {
     return STATIC_LINE_ITEMS.map(staticItem => ({
-        id: crypto.randomUUID(),
+        id: generateId(),
         description: staticItem.description,
         sac_code: staticItem.sac_code,
         unit: staticItem.unit,
@@ -119,7 +131,7 @@ export default function InvoiceModule() {
     const [items, setItems] = useState<InvoiceItem[]>(
         editInvoice?.items && editInvoice.business_type === 'BEIL'
             ? editInvoice.items.map((item: any) => ({
-                id: item.id || crypto.randomUUID(),
+                id: item.id || generateId(),
                 description: item.description || '',
                 sac_code: item.sac_code || '',
                 qty: item.qty || 0,
@@ -228,26 +240,42 @@ export default function InvoiceModule() {
 
     // Convert selected LRs to PI line items
     const convertLRsToPILineItems = () => {
-        const selectedLRData = lrRecords.filter(lr => selectedLRs.includes(lr.id));
-        const lineItems: PIInvoiceLineItem[] = selectedLRData.map(lr => ({
-            id: crypto.randomUUID(),
-            lr_id: lr.id,
-            lr_no: lr.lr_no,
-            lr_date: lr.lr_date,
-            manifest_no: lr.manifest_no || '',
-            vehicle_no: lr.vehicle?.registration_no || '',
-            distance_range: getDistanceRange(lr.distance || 0),
-            qty_display: 1, // Default to 1 trip
-            actual_qty: 1, // Default to 1 for calculation
-            unit: 'Per trip',
-            rate: 0,
-            amount: 0,
-            detention_days: lr.detention_days || calculateDetentionDays(lr.inward_time, lr.outward_time),
-            detention_rate: lr.detention_rate || 0,
-            detention_amount: lr.total_detention_amount || (lr.detention_days || calculateDetentionDays(lr.inward_time, lr.outward_time)) * (lr.detention_rate || 0),
-        }));
-        setPiLineItems(lineItems);
-        setShowLRPopup(false);
+        try {
+            console.log('Converting LRs to PI Line Items. Selected IDs:', selectedLRs);
+            console.log('Available LR Records:', lrRecords.length);
+            
+            const selectedLRData = lrRecords.filter(lr => selectedLRs.includes(lr.id));
+            console.log('Found matching LR data:', selectedLRData.length);
+
+            if (selectedLRData.length === 0) {
+                console.warn('No LRs matched the selected IDs');
+            }
+
+            const lineItems: PIInvoiceLineItem[] = selectedLRData.map(lr => ({
+                id: generateId(),
+                lr_id: lr.id,
+                lr_no: lr.lr_no,
+                lr_date: lr.lr_date,
+                manifest_no: lr.manifest_no || '',
+                vehicle_no: lr.vehicle?.registration_no || '',
+                distance_range: getDistanceRange(lr.distance || 0),
+                qty_display: 1, // Default to 1 trip
+                actual_qty: 1, // Default to 1 for calculation
+                unit: 'Per trip',
+                rate: 0,
+                amount: 0,
+                detention_days: lr.detention_days || calculateDetentionDays(lr.inward_time, lr.outward_time),
+                detention_rate: lr.detention_rate || 0,
+                detention_amount: lr.total_detention_amount || (lr.detention_days || calculateDetentionDays(lr.inward_time, lr.outward_time)) * (lr.detention_rate || 0),
+            }));
+            
+            console.log('Generated PI Line Items:', lineItems);
+            setPiLineItems(lineItems);
+            setShowLRPopup(false);
+        } catch (err) {
+            console.error('Error in convertLRsToPILineItems:', err);
+            alert('Failed to process selected LRs. Please check the console for details.');
+        }
     };
 
     const { totalAmount, gstAmount, sgstAmount, cgstAmount, grandTotal, amountWords, totalActualQty } = useMemo(() => {
