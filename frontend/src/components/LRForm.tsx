@@ -131,9 +131,18 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
             const formData = new FormData();
             Object.entries(data).forEach(([key, value]) => {
                 if (key === 'items') {
-                    formData.append(key, JSON.stringify(value));
+                    const items = value as any[];
+                    items.forEach((item, index) => {
+                        Object.entries(item).forEach(([itemKey, itemValue]) => {
+                            if (itemValue !== null && itemValue !== undefined) {
+                                formData.append(`items[${index}][${itemKey}]`, String(itemValue));
+                            }
+                        });
+                    });
                 } else {
-                    formData.append(key, String(value));
+                    if (value !== null && value !== undefined) {
+                        formData.append(key, String(value));
+                    }
                 }
             });
 
