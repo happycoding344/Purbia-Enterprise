@@ -8,7 +8,7 @@ import { InvoicePrint } from './InvoicePrint';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
-import InvoiceModule from './InvoiceModule';
+import InvoiceEditDialog from './InvoiceEditDialog';
 
 type Invoice = {
     id: number;
@@ -380,25 +380,18 @@ export default function InvoiceHistory() {
                 </DialogContent>
             </Dialog>
 
-            {/* Edit Dialog */}
-            <Dialog open={showEditDialog} onOpenChange={(open) => {
-                setShowEditDialog(open);
-                if (!open) setEditInvoiceData(null);
-            }}>
-                <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-y-auto p-0">
-                    <DialogHeader className="p-6 pb-0">
-                        <DialogTitle>Edit Invoice - {editInvoiceData?.invoice_no}</DialogTitle>
-                    </DialogHeader>
-                    <div className="p-6">
-                        {editInvoiceData && (
-                            <InvoiceModule
-                                editInvoiceOverride={editInvoiceData}
-                                onSuccess={handleEditSuccess}
-                            />
-                        )}
-                    </div>
-                </DialogContent>
-            </Dialog>
+            {/* Edit Dialog - uses dedicated InvoiceEditDialog to avoid blank screen issues */}
+            {editInvoiceData && (
+                <InvoiceEditDialog
+                    invoice={editInvoiceData}
+                    open={showEditDialog}
+                    onClose={() => {
+                        setShowEditDialog(false);
+                        setEditInvoiceData(null);
+                    }}
+                    onSaved={handleEditSuccess}
+                />
+            )}
 
             {/* Hidden invoice component for PDF generation */}
             {previewInvoice && (
