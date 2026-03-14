@@ -134,13 +134,13 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
                     const items = value as any[];
                     items.forEach((item, index) => {
                         Object.entries(item).forEach(([itemKey, itemValue]) => {
-                            if (itemValue !== null && itemValue !== undefined) {
+                            if (itemValue !== null && itemValue !== undefined && String(itemValue).trim() !== '') {
                                 formData.append(`items[${index}][${itemKey}]`, String(itemValue));
                             }
                         });
                     });
                 } else {
-                    if (value !== null && value !== undefined) {
+                    if (value !== null && value !== undefined && String(value).trim() !== '') {
                         formData.append(key, String(value));
                     }
                 }
@@ -151,20 +151,22 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
             });
 
             if (isEditMode) {
-                // Update existing LR
-                await api.post(`/lrs/${editLR.id}`, formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                });
+                await api.post(`/lrs/${editLR.id}`, formData);
             } else {
-                // Create new LR
-                await api.post('/lrs', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                });
+                await api.post('/lrs', formData);
             }
             onSuccess();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to submit LR', err);
-            alert(isEditMode ? 'Failed to update LR' : 'Failed to create LR');
+            const serverErrors = err?.response?.data;
+            if (serverErrors?.errors) {
+                const messages = Object.values(serverErrors.errors).flat().join('\n');
+                alert(`Validation errors:\n${messages}`);
+            } else if (serverErrors?.message) {
+                alert(`Error: ${serverErrors.message}`);
+            } else {
+                alert(isEditMode ? 'Failed to update LR' : 'Failed to create LR');
+            }
         } finally {
             setIsSubmitting(false);
         }
