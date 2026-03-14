@@ -151,6 +151,7 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
             });
 
             if (isEditMode) {
+                formData.append('_method', 'PUT');
                 await api.post(`/lrs/${editLR.id}`, formData);
             } else {
                 await api.post('/lrs', formData);
