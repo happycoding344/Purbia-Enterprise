@@ -81,9 +81,11 @@ export default function LRList() {
         }
     };
 
-    const handleCloseDialog = () => {
-        setOpen(false);
-        setEditingLR(null);
+    const handleOpenChange = (isOpen: boolean) => {
+        setOpen(isOpen);
+        if (!isOpen) {
+            setEditingLR(null);
+        }
     };
 
     if (isLoading) {
@@ -94,7 +96,7 @@ export default function LRList() {
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Loading Receipt (LR) History</h3>
-                <Dialog open={open} onOpenChange={handleCloseDialog}>
+                <Dialog open={open} onOpenChange={handleOpenChange}>
                     <DialogTrigger asChild>
                         <Button className="bg-blue-600 hover:bg-blue-700">
                             <Plus className="mr-2 h-4 w-4" /> Prepare New LR
@@ -102,7 +104,7 @@ export default function LRList() {
                     </DialogTrigger>
                     <DialogContent className="max-w-[95vw] w-full max-h-[95vh] overflow-y-auto p-0">
                         <LRForm
-                            onSuccess={() => { fetchLrs(); handleCloseDialog(); }}
+                            onSuccess={() => { fetchLrs(); handleOpenChange(false); }}
                             editLR={editingLR}
                         />
                     </DialogContent>

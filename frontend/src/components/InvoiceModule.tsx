@@ -117,10 +117,26 @@ const initializeBEILItems = (): InvoiceItem[] => {
 };
 
 export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { editInvoiceOverride?: any, onSuccess?: () => void }) {
-    // Check for edit invoice from localStorage or props
-    const editInvoiceData = localStorage.getItem('editInvoice');
-    const editInvoice = editInvoiceOverride || (editInvoiceData ? JSON.parse(editInvoiceData) : null);
+    // When editInvoiceOverride is passed (from popup), prefer it. Otherwise fall back to localStorage.
+    const editInvoice = editInvoiceOverride || (() => {
+        const stored = localStorage.getItem('editInvoice');
+        return stored ? JSON.parse(stored) : null;
+    })();
     const isEditMode = !!editInvoice;
+
+    // The API returns nested objects for billing_party and state, so resolve IDs from either shape
+    const resolveBillingPartyId = (inv: any): string => {
+        if (!inv) return '';
+        if (inv.billing_party_id) return String(inv.billing_party_id);
+        if (inv.billing_party?.id) return String(inv.billing_party.id);
+        return '';
+    };
+    const resolveStateId = (inv: any): string => {
+        if (!inv) return '';
+        if (inv.state_id) return String(inv.state_id);
+        if (inv.state?.id) return String(inv.state.id);
+        return '';
+    };
 
     const [businessType, setBusinessType] = useState<'BEIL' | 'PI'>(editInvoice?.business_type || 'BEIL');
     const [billingParties, setBillingParties] = useState<BillingParty[]>([]);
@@ -179,9 +195,9 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
     const [form, setForm] = useState({
         invoice_no: editInvoice?.invoice_no || '',
         invoice_date: editInvoice?.invoice_date ? format(new Date(editInvoice.invoice_date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
-        billing_party_id: editInvoice?.billing_party_id?.toString() || '',
+        billing_party_id: resolveBillingPartyId(editInvoice),
         delivery_address: editInvoice?.delivery_address || '',
-        state_id: editInvoice?.state_id?.toString() || '',
+        state_id: resolveStateId(editInvoice),
         state_code: editInvoice?.state_code || '',
         gst_number: editInvoice?.gst_number || '',
         po_number: editInvoice?.po_number || '',
@@ -960,7 +976,10 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                         <Download size={16} className="mr-2" />
                         Save as PDF
                     </Button>
-                    <Button type="button" variant="outline">Cancel</Button>
+                    <Button type="button" variant="outline" onClick={() => {
+                        if (onSuccess) onSuccess();
+                        else window.history.back();
+                    }}>Cancel</Button>
                     <Button type="submit" disabled={submitting}
                         style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', color: 'white', border: 'none', padding: '10px 28px' }}>
                         {submitting ? (isEditMode ? 'Updating...' : 'Saving...') : (isEditMode ? `Update ${businessType} Invoice` : `Save ${businessType} Invoice`)}
