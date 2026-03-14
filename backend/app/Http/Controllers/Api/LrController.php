@@ -67,9 +67,8 @@ class LrController extends Controller
                 // Auto calculate detention and amounts
                 $data = $request->except(['items', 'attachments']);
 
-                // Pref No generation logic - find max existing number to avoid duplicates
-                $maxPrefNo = Lr::where('financial_year', $request->financial_year)
-                    ->selectRaw("MAX(CAST(SUBSTRING(pref_no, 6) AS UNSIGNED)) as max_num")
+                // Pref No generation logic - find max existing number globally to avoid duplicates
+                $maxPrefNo = Lr::selectRaw("MAX(CAST(SUBSTRING(pref_no, 6) AS UNSIGNED)) as max_num")
                     ->value('max_num');
                 $data['pref_no'] = 'PREF-' . (($maxPrefNo ?? 0) + 1);
 
