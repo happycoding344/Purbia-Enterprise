@@ -119,6 +119,149 @@ const initializeBEILItems = (): InvoiceItem[] => {
     }));
 };
 
+// Sub-component for PI LR Selection Dialog Content
+export function PIDialogContent({ availableLRs, filters, setFilters, billingParties, onAdd }: any) {
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+    const handleToggle = (id: number) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    };
+
+    const handleToggleAll = () => {
+        if (selectedIds.length === availableLRs.length && availableLRs.length > 0) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(availableLRs.map((lr: any) => lr.id));
+        }
+    };
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 10 }}>
+            {/* Filters */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div style={{ flex: '1 1 120px' }}>
+                    <Label style={{ fontSize: 11 }}>LR No.</Label>
+                    <Input 
+                        placeholder="Search LR..."
+                        value={filters.lr_no} 
+                        onChange={e => setFilters({ ...filters, lr_no: e.target.value })}
+                        style={{ height: 32, fontSize: 12 }}
+                    />
+                </div>
+                <div style={{ flex: '1 1 120px' }}>
+                    <Label style={{ fontSize: 11 }}>Vehicle No.</Label>
+                    <Input 
+                        placeholder="Search Vehicle..."
+                        value={filters.vehicle_no} 
+                        onChange={e => setFilters({ ...filters, vehicle_no: e.target.value })}
+                        style={{ height: 32, fontSize: 12 }}
+                    />
+                </div>
+                <div style={{ flex: '1 1 150px' }}>
+                    <Label style={{ fontSize: 11 }}>Billing Party</Label>
+                    <select 
+                        value={filters.billing_party_id}
+                        onChange={e => setFilters({ ...filters, billing_party_id: e.target.value })}
+                        style={{ width: '100%', height: 32, padding: '0 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 12 }}
+                    >
+                        <option value="">All Parties</option>
+                        {billingParties.map((bp: any) => (
+                            <option key={bp.id} value={bp.id}>{bp.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div style={{ flex: '1 1 110px' }}>
+                    <Label style={{ fontSize: 11 }}>From Date</Label>
+                    <Input 
+                        type="date"
+                        value={filters.date_from} 
+                        onChange={e => setFilters({ ...filters, date_from: e.target.value })}
+                        style={{ height: 32, fontSize: 12 }}
+                    />
+                </div>
+                <div style={{ flex: '1 1 110px' }}>
+                    <Label style={{ fontSize: 11 }}>To Date</Label>
+                    <Input 
+                        type="date"
+                        value={filters.date_to} 
+                        onChange={e => setFilters({ ...filters, date_to: e.target.value })}
+                        style={{ height: 32, fontSize: 12 }}
+                    />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                    <Button 
+                        variant="outline" 
+                        onClick={() => setFilters({ lr_no: '', date_from: '', date_to: '', vehicle_no: '', billing_party_id: '' })}
+                        style={{ height: 32, fontSize: 12 }}
+                    >
+                        Clear
+                    </Button>
+                </div>
+            </div>
+
+            {/* Table */}
+            <div style={{ maxHeight: 350, overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead style={{ position: 'sticky', top: 0, background: '#f1f5f9', zIndex: 1, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                        <tr>
+                            <th style={{ padding: '8px 12px', textAlign: 'center', width: 40 }}>
+                                <Checkbox 
+                                    checked={selectedIds.length === availableLRs.length && availableLRs.length > 0} 
+                                    onCheckedChange={handleToggleAll} 
+                                />
+                            </th>
+                            <th style={{ padding: '8px 12px', textAlign: 'left' }}>LR No.</th>
+                            <th style={{ padding: '8px 12px', textAlign: 'left' }}>Date</th>
+                            <th style={{ padding: '8px 12px', textAlign: 'left' }}>Vehicle No.</th>
+                            <th style={{ padding: '8px 12px', textAlign: 'right' }}>Items</th>
+                            <th style={{ padding: '8px 12px', textAlign: 'right' }}>Amount (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {availableLRs.length === 0 ? (
+                            <tr><td colSpan={6} style={{ padding: 30, textAlign: 'center', color: '#94a3b8' }}>No un-invoiced LRs matching filters found.</td></tr>
+                        ) : (
+                            availableLRs.map((lr: any) => (
+                                <tr key={lr.id} style={{ borderBottom: '1px solid #f1f5f9', background: selectedIds.includes(lr.id) ? '#f0fdf4' : 'white' }}>
+                                    <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                                        <Checkbox 
+                                            checked={selectedIds.includes(lr.id)} 
+                                            onCheckedChange={() => handleToggle(lr.id)} 
+                                        />
+                                    </td>
+                                    <td style={{ padding: '8px 12px', fontWeight: 600 }}>{lr.lr_no}</td>
+                                    <td style={{ padding: '8px 12px' }}>{lr.lr_date}</td>
+                                    <td style={{ padding: '8px 12px' }}>{lr.vehicle?.registration_no || '—'}</td>
+                                    <td style={{ padding: '8px 12px', textAlign: 'right' }}>{lr.items?.length || 0}</td>
+                                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#0f172a' }}>
+                                        {lr.total_amount ? Number(lr.total_amount).toFixed(2) : '—'}
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 4 }}>
+                <span style={{ alignSelf: 'center', marginRight: 'auto', fontSize: 13, color: '#64748b' }}>
+                    {selectedIds.length} selected
+                </span>
+                <Button 
+                    onClick={() => {
+                        onAdd(selectedIds);
+                        setSelectedIds([]);
+                    }}
+                    disabled={selectedIds.length === 0}
+                    style={{ background: '#7c3aed', color: 'white' }}
+                >
+                    Add Selected to Invoice
+                </Button>
+            </div>
+        </div>
+    );
+}
+
 export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { editInvoiceOverride?: any, onSuccess?: () => void }) {
     // When editInvoiceOverride is passed (from popup), prefer it. Otherwise fall back to localStorage.
     const editInvoice = editInvoiceOverride || (() => {
