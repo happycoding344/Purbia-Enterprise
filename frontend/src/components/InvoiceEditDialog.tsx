@@ -7,10 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Trash2, Save, X, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { MasterSelect } from './MasterSelect';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type BillingParty = { id: number; name: string };
 type StateItem = { id: number; name: string };
 
 type LineItem = {
@@ -70,7 +70,6 @@ export default function InvoiceEditDialog({ invoice, open, onClose, onSaved }: I
     const businessType: 'BEIL' | 'PI' = invoice?.business_type || 'BEIL';
 
     // ── State ────────────────────────────────────────────────────────────────
-    const [billingParties, setBillingParties] = useState<BillingParty[]>([]);
     const [states, setStates] = useState<StateItem[]>([]);
     const [dataLoading, setDataLoading] = useState(true);
     const [dataError, setDataError] = useState('');
@@ -148,12 +147,8 @@ export default function InvoiceEditDialog({ invoice, open, onClose, onSaved }: I
         if (!open) return;
         setDataLoading(true);
         setDataError('');
-        Promise.all([
-            api.get('/masters/billing_parties').catch(() => ({ data: [] })),
-            api.get('/masters/states').catch(() => ({ data: [] })),
-        ]).then(([bpRes, stRes]) => {
-            setBillingParties(Array.isArray(bpRes.data) ? bpRes.data : []);
-            setStates(Array.isArray(stRes.data) ? stRes.data : []);
+        api.get('/masters/states').then(res => {
+            setStates(Array.isArray(res.data) ? res.data : []);
             setDataLoading(false);
         }).catch(() => {
             setDataError('Failed to load dropdown data. Please refresh.');
@@ -315,22 +310,23 @@ export default function InvoiceEditDialog({ invoice, open, onClose, onSaved }: I
                                         onChange={e => setForm(p => ({ ...p, invoice_date: e.target.value }))} />
                                 </div>
                                 <div style={fieldStyle}>
-                                    <Label style={inputStyle}>Billing Party *</Label>
-                                    <select
-                                        style={{ height: 36, width: '100%', border: '1px solid #e2e8f0', borderRadius: 6, padding: '0 8px', fontSize: 13 }}
-                                        value={form.billing_party_id}
-                                        onChange={e => setForm(p => ({ ...p, billing_party_id: e.target.value }))}
-                                    >
-                                        <option value="">Select billing party</option>
-                                        {billingParties.map(bp => (
-                                            <option key={bp.id} value={bp.id}>{bp.name}</option>
-                                        ))}
-                                    </select>
+                                    <MasterSelect
+                                        type="billing_parties"
+                                        label="Billing Party *"
+                                        placeholder="Select billing party"
+                                        value={form.billing_party_id ? +form.billing_party_id : undefined}
+                                        onChange={(val) => setForm(p => ({ ...p, billing_party_id: String(val) }))}
+                                    />
                                 </div>
                                 <div style={{ ...fieldStyle, gridColumn: 'span 3' }}>
-                                    <Label style={inputStyle}>Delivery Address</Label>
-                                    <Input style={inputStyle} value={form.delivery_address}
-                                        onChange={e => setForm(p => ({ ...p, delivery_address: e.target.value }))} />
+                                    <MasterSelect
+                                        type="delivery_places"
+                                        label="Delivery Address"
+                                        placeholder="Full delivery address"
+                                        valueKey="name"
+                                        value={form.delivery_address}
+                                        onChange={(val) => setForm(p => ({ ...p, delivery_address: String(val) }))}
+                                    />
                                 </div>
                                 <div style={fieldStyle}>
                                     <Label style={inputStyle}>State</Label>

@@ -35,9 +35,10 @@ interface MasterSelectProps {
     type: string
     label: string
     placeholder?: string
-    value?: number
-    onChange: (value: number) => void
+    value?: number | string
+    onChange: (value: any) => void
     error?: string
+    valueKey?: 'id' | 'name'
 }
 
 export function MasterSelect({
@@ -46,7 +47,8 @@ export function MasterSelect({
     placeholder = "Select...",
     value,
     onChange,
-    error
+    error,
+    valueKey = 'id'
 }: MasterSelectProps) {
     const [open, setOpen] = React.useState(false)
     const [items, setItems] = React.useState<MasterItem[]>([])
@@ -78,7 +80,9 @@ export function MasterSelect({
             const response = await api.post(`/masters/${type}`, { name: newName })
             const newItem = response.data
             setItems((prev) => [...prev, newItem].sort((a, b) => a.name.localeCompare(b.name)))
-            onChange(newItem.id)
+            
+            onChange(valueKey === 'name' ? newItem.name : newItem.id)
+            
             setShowAddDialog(false)
             setNewName("")
             setOpen(false)
@@ -89,7 +93,11 @@ export function MasterSelect({
         }
     }
 
-    const selectedItem = items.find((item) => item.id === value)
+    // Safely compare using string representation
+    const selectedItem = items.find((item) => String(item[valueKey]) === String(value))
+    
+    // If we are looking by name and have a value but it's not in the list, we can fallback to displaying the value itself.
+    const displayValue = selectedItem ? selectedItem.name : (valueKey === 'name' && value ? String(value) : placeholder)
 
     return (
         <div className="space-y-2">
@@ -106,7 +114,7 @@ export function MasterSelect({
                             error && "border-destructive"
                         )}
                     >
-                        {selectedItem ? selectedItem.name : placeholder}
+                        {displayValue}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
@@ -133,14 +141,14 @@ export function MasterSelect({
                                         key={item.id}
                                         value={item.name}
                                         onSelect={() => {
-                                            onChange(item.id)
+                                            onChange(valueKey === 'name' ? item.name : item.id)
                                             setOpen(false)
                                         }}
                                     >
                                         <Check
                                             className={cn(
                                                 "mr-2 h-4 w-4",
-                                                value === item.id ? "opacity-100" : "opacity-0"
+                                                String(value) === String(item[valueKey]) ? "opacity-100" : "opacity-0"
                                             )}
                                         />
                                         {item.name}

@@ -42,7 +42,7 @@ class LrController extends Controller
             'manifest_date' => 'nullable|date',
             'inward_time' => 'nullable|date',
             'outward_time' => 'nullable|date',
-            'distance' => 'nullable|numeric',
+            'distance' => 'nullable|string',
             'delay_hours' => 'nullable|integer',
             'detention_rate' => 'nullable|numeric',
 
@@ -166,7 +166,7 @@ class LrController extends Controller
             'manifest_date' => 'nullable|date',
             'inward_time' => 'nullable|date',
             'outward_time' => 'nullable|date',
-            'distance' => 'nullable|numeric',
+            'distance' => 'nullable|string',
             'delay_hours' => 'nullable|integer',
             'detention_rate' => 'nullable|numeric',
 

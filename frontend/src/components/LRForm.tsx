@@ -35,7 +35,7 @@ const lrSchema = z.object({
     manifest_date: z.string().nullable().optional(),
     inward_time: z.string().nullable().optional(),
     outward_time: z.string().nullable().optional(),
-    distance: z.coerce.number().nullable().optional(),
+    distance: z.string().nullable().optional(),
     delay_hours: z.coerce.number().nullable().optional(),
     detention_rate: z.coerce.number().optional().default(0),
 
@@ -336,7 +336,7 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Distance (kms)</Label>
-                                    <Input type="number" {...register('distance')} />
+                                    <Input {...register('distance')} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Delay Hours (Grace)</Label>
