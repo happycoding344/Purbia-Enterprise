@@ -12,6 +12,7 @@ import {
 import { format } from 'date-fns';
 import { InvoicePrint } from './InvoicePrint';
 import { MasterSelect } from './MasterSelect';
+import { Checkbox } from '@/components/ui/checkbox';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -40,6 +41,7 @@ type LRRecord = {
     distance?: number;
     inward_time?: string;
     outward_time?: string;
+    billing_party_id?: number;
 };
 
 type InvoiceItem = {
@@ -57,7 +59,7 @@ type PIInvoiceLineItem = {
     manifest_no: string;
     vehicle_no: string;
     distance_range: string;
-    qty_display: number; // Display value for user
+    qty_display: string; // Display value for user (now string)
     actual_qty: number; // Hidden - actual value for calculation
     unit: string;
     rate: number;
@@ -145,6 +147,8 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
     const [lrRecords, setLrRecords] = useState<LRRecord[]>([]);
     const [selectedLRs, _setSelectedLRs] = useState<number[]>(editInvoice?.lrs?.map((lr: any) => lr.id) || []);
     const [showLRPopup, setShowLRPopup] = useState(false);
+    const [showPIDialog, setShowPIDialog] = useState(false);
+    const [piFilters, setPiFilters] = useState({ lr_no: '', date_from: '', date_to: '', vehicle_no: '', billing_party_id: '' });
     const [items, setItems] = useState<InvoiceItem[]>(
         editInvoice?.items && editInvoice.business_type === 'BEIL'
             ? editInvoice.items.map((item: any) => ({
@@ -299,10 +303,63 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
             updated.amount = (updated.actual_qty || 0) * (updated.rate || 0);
             updated.detention_amount = (updated.detention_days || 0) * (updated.detention_rate || 0);
             return updated;
+            return updated;
         }));
     };
 
-    // Add a new empty PI row
+    // Filter available LRs for PI dialog
+    const filteredPILrs = useMemo(() => {
+        return lrRecords.filter(lr => {
+            // Only show un-invoiced or currently selected LRs
+            // For now, filtering based on simple checks
+            if (piLineItems.some(item => item.lr_id === lr.id)) return false; // Already in table
+            
+            if (piFilters.lr_no && !lr.lr_no.toLowerCase().includes(piFilters.lr_no.toLowerCase())) return false;
+            if (piFilters.vehicle_no && !lr.vehicle?.registration_no?.toLowerCase().includes(piFilters.vehicle_no.toLowerCase())) return false;
+            if (piFilters.billing_party_id && String(lr.billing_party_id) !== piFilters.billing_party_id) return false;
+            if (piFilters.date_from && new Date(lr.lr_date) < new Date(piFilters.date_from)) return false;
+            if (piFilters.date_to && new Date(lr.lr_date) > new Date(piFilters.date_to)) return false;
+            return true;
+        });
+    }, [lrRecords, piFilters, piLineItems]);
+
+    const handleSelectPILRs = (selectedIds: number[]) => {
+        const newRows = selectedIds.map(lrId => {
+            const lr = lrRecords.find(r => r.id === lrId);
+            if (!lr) return null;
+            const detentionDays = lr.detention_days || calculateDetentionDays(lr.inward_time, lr.outward_time);
+            
+            // Auto populate logic
+            const actualQty = lr.items && lr.items.length > 0 ? lr.items.reduce((s, i) => s + (Number(i.qty) || 0), 0) : 1;
+            const rate = lr.items && lr.items.length > 0 ? Number(lr.items[0].rate) || 0 : 0;
+            const detRate = Number(lr.detention_rate) || 0;
+            const baseAmount = actualQty * rate;
+            const detAmount = detentionDays * detRate;
+
+            return {
+                id: generateId(),
+                lr_id: lr.id,
+                lr_no: lr.lr_no,
+                lr_date: lr.lr_date,
+                manifest_no: lr.manifest_no || '',
+                vehicle_no: lr.vehicle?.registration_no || '',
+                distance_range: getDistanceRange(lr.distance || 0),
+                qty_display: String(actualQty),
+                actual_qty: actualQty,
+                unit: 'Per trip',
+                rate: rate,
+                amount: baseAmount,
+                detention_days: detentionDays,
+                detention_rate: detRate,
+                detention_amount: detAmount,
+            };
+        }).filter(Boolean) as PIInvoiceLineItem[];
+
+        setPiLineItems(prev => [...prev, ...newRows]);
+        setShowPIDialog(false);
+    };
+
+    // Add a new empty PI row (Fall back if needed, but not primarily used anymore)
     const addPIRow = () => {
         setPiLineItems(prev => [...prev, {
             id: generateId(),
@@ -312,7 +369,7 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
             manifest_no: '',
             vehicle_no: '',
             distance_range: '',
-            qty_display: 1,
+            qty_display: '1',
             actual_qty: 1,
             unit: 'Per trip',
             rate: 0,
@@ -328,7 +385,7 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
         setPiLineItems(prev => prev.filter(item => item.id !== id));
     };
 
-    const { totalAmount, gstAmount, sgstAmount, cgstAmount, grandTotal, amountWords, totalActualQty } = useMemo(() => {
+    const { totalAmount, gstAmount, sgstAmount, cgstAmount, grandTotal, amountWords } = useMemo(() => {
         let totalAmount = 0;
         let totalActualQty = 0;
         if (businessType === 'BEIL') {
@@ -344,8 +401,8 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
         const cgstAmount = totalAmount * 0.09;
         const gstAmount = sgstAmount + cgstAmount;
         const grandTotal = totalAmount + gstAmount;
-        const amountWords = isNaN(grandTotal) ? 'ZERO ONLY' : numberToIndianWords(Math.round(grandTotal));
-        return { totalAmount, gstAmount, sgstAmount, cgstAmount, grandTotal, amountWords, totalActualQty };
+            const amountWords = isNaN(grandTotal) ? 'ZERO ONLY' : numberToIndianWords(Math.round(grandTotal));
+        return { totalAmount, gstAmount, sgstAmount, cgstAmount, grandTotal, amountWords };
     }, [items, piLineItems, businessType]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -780,15 +837,31 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                 <span style={{ fontSize: 13, color: '#64748b' }}>
                                     {piLineItems.length} LR row(s) added
                                 </span>
-                                <button type="button" onClick={addPIRow}
-                                    style={{ padding: '6px 14px', background: '#f5f3ff', color: '#7c3aed', border: '1px dashed #a78bfa', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <Plus size={14} /> Add LR Row
-                                </button>
+                                <Dialog open={showPIDialog} onOpenChange={setShowPIDialog}>
+                                    <DialogTrigger asChild>
+                                        <button type="button"
+                                            style={{ padding: '6px 14px', background: '#f5f3ff', color: '#7c3aed', border: '1px dashed #a78bfa', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <Plus size={14} /> Add LR Row
+                                        </button>
+                                    </DialogTrigger>
+                                    <DialogContent style={{ maxWidth: 900 }}>
+                                        <DialogHeader>
+                                            <DialogTitle>Select LRs from Master</DialogTitle>
+                                        </DialogHeader>
+                                        <PIDialogContent
+                                            availableLRs={filteredPILrs}
+                                            filters={piFilters}
+                                            setFilters={setPiFilters}
+                                            billingParties={billingParties}
+                                            onAdd={handleSelectPILRs}
+                                        />
+                                    </DialogContent>
+                                </Dialog>
                             </div>
 
                             {piLineItems.length === 0 ? (
                                 <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', border: '2px dashed #e2e8f0', borderRadius: 12, fontSize: 13 }}>
-                                    Click "Add LR Row" to add LR records to this invoice
+                                    Click "Add LR Row" to select and add LR records to this invoice
                                 </div>
                             ) : (
                                 <div style={{ overflowX: 'auto' }}>
@@ -796,7 +869,7 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                         <thead>
                                             <tr style={{ background: '#7c3aed', color: 'white' }}>
                                                 <th style={{ padding: '8px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>Sr.</th>
-                                                <th style={{ padding: '8px 10px', textAlign: 'left', minWidth: 160 }}>Select LR</th>
+                                                <th style={{ padding: '8px 10px', textAlign: 'left', whiteSpace: 'nowrap' }}>LR No.</th>
                                                 <th style={{ padding: '8px 10px', textAlign: 'left', whiteSpace: 'nowrap' }}>Date</th>
                                                 <th style={{ padding: '8px 10px', textAlign: 'left', whiteSpace: 'nowrap' }}>Manifest No.</th>
                                                 <th style={{ padding: '8px 10px', textAlign: 'left', whiteSpace: 'nowrap' }}>Vehicle No.</th>
@@ -822,18 +895,9 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                                 <tr key={item.id} style={{ background: idx % 2 === 0 ? '#faf5ff' : 'white', borderBottom: '1px solid #ede9fe' }}>
                                                     {/* Sr. */}
                                                     <td style={{ padding: '6px 10px', textAlign: 'center', color: '#64748b', fontWeight: 700 }}>{idx + 1}</td>
-                                                    {/* LR Select dropdown */}
-                                                    <td style={{ padding: '4px 6px' }}>
-                                                        <select
-                                                            value={item.lr_id || ''}
-                                                            onChange={e => handlePILRSelect(item.id, +e.target.value)}
-                                                            style={{ width: 170, height: 32, border: '1px solid #a78bfa', borderRadius: 6, padding: '0 6px', fontSize: 12, color: item.lr_id ? '#1e1b4b' : '#94a3b8', background: item.lr_id ? '#f5f3ff' : 'white' }}
-                                                        >
-                                                            <option value="">— select LR —</option>
-                                                            {lrRecords.map(lr => (
-                                                                <option key={lr.id} value={lr.id}>{lr.lr_no}</option>
-                                                            ))}
-                                                        </select>
+                                                    {/* LR No Display */}
+                                                    <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1e1b4b' }}>
+                                                        {item.lr_no || '—'}
                                                     </td>
                                                     {/* Auto-populated read-only fields */}
                                                     <td style={{ padding: '6px 10px', fontSize: 11, color: '#374151', whiteSpace: 'nowrap' }}>{item.lr_date || '—'}</td>
@@ -843,9 +907,9 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                                     {/* Qty Display (user fills, shown on invoice) */}
                                                     <td style={{ padding: '4px 6px' }}>
                                                         <Input
-                                                            type="number"
+                                                            type="text"
                                                             value={item.qty_display}
-                                                            onChange={e => updatePILineItem(item.id, 'qty_display', +e.target.value)}
+                                                            onChange={e => updatePILineItem(item.id, 'qty_display', e.target.value)}
                                                             style={{ width: 60, textAlign: 'center', fontSize: 12, height: 32 }}
                                                             title="Display value shown on invoice"
                                                         />
@@ -912,8 +976,9 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                             <tr style={{ background: '#1e1b4b', color: 'white', fontWeight: 700 }}>
                                                 <td colSpan={6} style={{ padding: '10px 12px', textAlign: 'right', fontSize: 13 }}>TOTAL</td>
                                                 {/* Total Qty Display */}
-                                                <td style={{ padding: '10px 8px', textAlign: 'center', fontSize: 13 }}>
-                                                    {piLineItems.reduce((s, i) => s + (i.qty_display || 0), 0)}
+                                                <td style={{ padding: '10px 8px', textAlign: 'center', fontSize: 13, color: '#666' }}>
+                                                    {/* Display string qty does not sum naturally, show N/A or count */}
+                                                    -
                                                 </td>
                                                 {/* Total Actual Qty (calc) */}
                                                 <td style={{ padding: '10px 8px', textAlign: 'center', fontSize: 13, background: '#d97706', color: 'white' }}>
