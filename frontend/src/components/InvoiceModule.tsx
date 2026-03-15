@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { InvoicePrint } from './InvoicePrint';
+import { MasterSelect } from './MasterSelect';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -600,20 +601,23 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                 onChange={e => setForm(p => ({ ...p, invoice_date: e.target.value }))} required />
                         </div>
                         <div>
-                            <Label>Billing Party *</Label>
-                            <select
-                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm mt-1"
-                                value={form.billing_party_id}
-                                onChange={e => setForm(p => ({ ...p, billing_party_id: e.target.value }))} required
-                            >
-                                <option value="">Select billing party</option>
-                                {billingParties.map(bp => <option key={bp.id} value={bp.id}>{bp.name}</option>)}
-                            </select>
+                            <MasterSelect
+                                type="billing_parties"
+                                label="Billing Party *"
+                                placeholder="Select billing party"
+                                value={form.billing_party_id ? +form.billing_party_id : undefined}
+                                onChange={(val) => setForm(p => ({ ...p, billing_party_id: String(val) }))}
+                            />
                         </div>
                         <div style={{ gridColumn: 'span 3' }}>
-                            <Label>Delivery Address</Label>
-                            <Input className="mt-1" placeholder="Full delivery address" value={form.delivery_address}
-                                onChange={e => setForm(p => ({ ...p, delivery_address: e.target.value }))} />
+                            <MasterSelect
+                                type="delivery_places"
+                                label="Delivery Address"
+                                placeholder="Full delivery address"
+                                valueKey="name"
+                                value={form.delivery_address}
+                                onChange={(val) => setForm(p => ({ ...p, delivery_address: String(val) }))}
+                            />
                         </div>
                         <div>
                             <Label>State *</Label>
