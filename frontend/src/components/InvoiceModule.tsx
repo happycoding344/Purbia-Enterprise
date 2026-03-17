@@ -1018,153 +1018,150 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, tableLayout: 'auto' }}>
                                         <thead>
                                             <tr style={{ background: '#7c3aed', color: 'white' }}>
-                                                <th style={{ padding: '8px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>Sr.</th>
-                                                <th style={{ padding: '8px 10px', textAlign: 'left', whiteSpace: 'nowrap' }}>LR No.</th>
+                                                <th style={{ padding: '8px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>Sr. No.</th>
                                                 <th style={{ padding: '8px 10px', textAlign: 'left', whiteSpace: 'nowrap' }}>Date</th>
-                                                <th style={{ padding: '8px 10px', textAlign: 'left', whiteSpace: 'nowrap' }}>Manifest No.</th>
+                                                <th style={{ padding: '8px 10px', textAlign: 'left', whiteSpace: 'nowrap' }}>L/R No.</th>
+                                                <th style={{ padding: '8px 10px', textAlign: 'left', whiteSpace: 'nowrap' }}>Manifest No</th>
                                                 <th style={{ padding: '8px 10px', textAlign: 'left', whiteSpace: 'nowrap' }}>Vehicle No.</th>
-                                                <th style={{ padding: '8px 10px', textAlign: 'left', whiteSpace: 'nowrap' }}>Distance</th>
-                                                {/* Qty Display: shown to user, printed on invoice */}
-                                                <th style={{ padding: '8px 6px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                                    Qty<br/><span style={{ fontWeight: 400, fontSize: 10, opacity: 0.8 }}>(Display)</span>
-                                                </th>
-                                                {/* Actual Qty: hidden from invoice, used for calculation */}
-                                                <th style={{ padding: '8px 6px', textAlign: 'center', whiteSpace: 'nowrap', background: '#f59e0b', color: '#1c1917' }}>
-                                                    Actual Qty<br/><span style={{ fontWeight: 400, fontSize: 10 }}>(Calc. only)</span>
-                                                </th>
-                                                <th style={{ padding: '8px 6px', textAlign: 'right', whiteSpace: 'nowrap' }}>Rate (₹)</th>
-                                                <th style={{ padding: '8px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>Amount (₹)<br/><span style={{ fontWeight: 400, fontSize: 10, opacity: 0.8 }}>ActualQty × Rate</span></th>
-                                                <th style={{ padding: '8px 6px', textAlign: 'center', whiteSpace: 'nowrap' }}>Det.<br/>Days</th>
-                                                <th style={{ padding: '8px 6px', textAlign: 'right', whiteSpace: 'nowrap' }}>Det.<br/>Rate/Day</th>
-                                                <th style={{ padding: '8px 10px', textAlign: 'right', whiteSpace: 'nowrap', color: '#fcd34d' }}>Det.<br/>Amount (₹)</th>
-                                                <th style={{ padding: '8px 6px', textAlign: 'center' }}></th>
+                                                <th style={{ padding: '8px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>Actual Quantity</th>
+                                                <th style={{ padding: '8px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>Billing<br/>Quantity</th>
+                                                <th style={{ padding: '8px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>Rate</th>
+                                                <th style={{ padding: '8px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>Amount</th>
+                                                <th style={{ padding: '8px 6px', textAlign: 'center', width: 30 }}></th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {piLineItems.map((item, idx) => (
-                                                <tr key={item.id} style={{ background: idx % 2 === 0 ? '#faf5ff' : 'white', borderBottom: '1px solid #ede9fe' }}>
-                                                    {/* Sr. */}
-                                                    <td style={{ padding: '6px 10px', textAlign: 'center', color: '#64748b', fontWeight: 700 }}>{idx + 1}</td>
-                                                    {/* LR No Display */}
-                                                    <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1e1b4b' }}>
-                                                        {item.lr_no || '—'}
-                                                    </td>
-                                                    {/* Auto-populated read-only fields */}
-                                                    <td style={{ padding: '6px 10px', fontSize: 11, color: '#374151', whiteSpace: 'nowrap' }}>{item.lr_date || '—'}</td>
-                                                    <td style={{ padding: '6px 10px', fontSize: 11, color: '#374151' }}>{item.manifest_no || '—'}</td>
-                                                    <td style={{ padding: '6px 10px', fontSize: 11, color: '#374151' }}>{item.vehicle_no || '—'}</td>
-                                                    <td style={{ padding: '6px 10px', fontSize: 11, color: '#374151', textAlign: 'center' }}>{item.distance_range || '—'}</td>
-                                                    {/* Qty Display (user fills, shown on invoice) */}
-                                                    <td style={{ padding: '4px 6px' }}>
-                                                        <Input
-                                                            type="text"
-                                                            value={item.qty_display}
-                                                            onChange={e => updatePILineItem(item.id, 'qty_display', e.target.value)}
-                                                            style={{ width: 60, textAlign: 'center', fontSize: 12, height: 32 }}
-                                                            title="Display value shown on invoice"
-                                                        />
-                                                    </td>
-                                                    {/* Actual Qty (hidden from invoice, used for calculation) */}
-                                                    <td style={{ padding: '4px 6px', background: '#fef3c7' }}>
-                                                        <Input
-                                                            type="number"
-                                                            value={item.actual_qty}
-                                                            onChange={e => updatePILineItem(item.id, 'actual_qty', +e.target.value)}
-                                                            style={{ width: 70, textAlign: 'center', fontSize: 12, height: 32, background: '#fef9c3', border: '1px solid #fbbf24' }}
-                                                            title="Used for calculation: Actual Qty × Rate = Amount (not printed)"
-                                                        />
-                                                    </td>
-                                                    {/* Rate */}
-                                                    <td style={{ padding: '4px 6px' }}>
-                                                        <Input
-                                                            type="number"
-                                                            value={item.rate}
-                                                            onChange={e => updatePILineItem(item.id, 'rate', +e.target.value)}
-                                                            style={{ width: 90, textAlign: 'right', fontSize: 12, height: 32 }}
-                                                        />
-                                                    </td>
-                                                    {/* Amount = actual_qty × rate (auto-calculated, read-only) */}
-                                                    <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 700, color: '#1e1b4b', fontSize: 13 }}>
-                                                        ₹{(item.amount || 0).toLocaleString('en-IN')}
-                                                    </td>
-                                                    {/* Detention Days (auto from LR, user can override) */}
-                                                    <td style={{ padding: '4px 6px' }}>
-                                                        <Input
-                                                            type="number"
-                                                            value={item.detention_days}
-                                                            onChange={e => updatePILineItem(item.id, 'detention_days', +e.target.value)}
-                                                            style={{ width: 55, textAlign: 'center', fontSize: 12, height: 32 }}
-                                                            title="Auto-calculated from LR inward/outward times"
-                                                        />
-                                                    </td>
-                                                    {/* Detention Rate */}
-                                                    <td style={{ padding: '4px 6px' }}>
-                                                        <Input
-                                                            type="number"
-                                                            value={item.detention_rate}
-                                                            onChange={e => updatePILineItem(item.id, 'detention_rate', +e.target.value)}
-                                                            style={{ width: 80, textAlign: 'right', fontSize: 12, height: 32 }}
-                                                        />
-                                                    </td>
-                                                    {/* Detention Amount = detention_days × detention_rate */}
-                                                    <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 700, color: '#ea580c', fontSize: 13 }}>
-                                                        ₹{(item.detention_amount || 0).toLocaleString('en-IN')}
-                                                    </td>
-                                                    {/* Remove row */}
-                                                    <td style={{ padding: '4px 6px', textAlign: 'center' }}>
-                                                        <button type="button" onClick={() => removePIRow(item.id)}
-                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4 }}
-                                                            title="Remove this row">
-                                                            <X size={14} />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            {(() => {
+                                                let srNo = 0;
+                                                return piLineItems.map((item, idx) => {
+                                                    srNo++;
+                                                    const transportSr = srNo;
+                                                    const hasDetention = (item.detention_days || 0) > 0 && (item.detention_rate || 0) > 0;
+                                                    if (hasDetention) srNo++; // detention sub-row gets a sr number too
+
+                                                    // Format inward/outward dates for detention row
+                                                    const formatShortDate = (d: string | undefined) => {
+                                                        if (!d) return '';
+                                                        try { return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch { return d; }
+                                                    };
+                                                    const lr = lrRecords.find(r => r.id === item.lr_id);
+                                                    const inwardDate = lr?.inward_time ? formatShortDate(lr.inward_time) : '';
+                                                    const outwardDate = lr?.outward_time ? formatShortDate(lr.outward_time) : '';
+                                                    const detentionDateRange = inwardDate && outwardDate ? `${inwardDate} To ${outwardDate}` : '';
+                                                    const detDays = item.detention_days || 0;
+                                                    // Detention billing qty formula: e.g. "3-1=2" (total days - 1 free day = chargeable)
+                                                    const detBillingQty = detDays > 0 ? `${detDays + 1}-1=${detDays}` : '0';
+
+                                                    return (
+                                                        <React.Fragment key={item.id}>
+                                                            {/* Transport Row */}
+                                                            <tr style={{ background: idx % 2 === 0 ? '#faf5ff' : 'white', borderBottom: hasDetention ? 'none' : '1px solid #ede9fe' }}>
+                                                                <td style={{ padding: '6px 10px', textAlign: 'center', color: '#64748b', fontWeight: 700 }}>{transportSr}</td>
+                                                                <td style={{ padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap' }}>{item.lr_date || '—'}</td>
+                                                                <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1e1b4b' }}>{item.lr_no || '—'}</td>
+                                                                <td style={{ padding: '6px 10px', fontSize: 11 }}>{item.manifest_no || '—'}</td>
+                                                                <td style={{ padding: '6px 10px', fontSize: 11 }}>{item.vehicle_no || '—'}</td>
+                                                                {/* Actual Quantity */}
+                                                                <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                                                                    <Input
+                                                                        type="number"
+                                                                        value={item.actual_qty}
+                                                                        onChange={e => updatePILineItem(item.id, 'actual_qty', +e.target.value)}
+                                                                        style={{ width: 70, textAlign: 'center', fontSize: 12, height: 32 }}
+                                                                    />
+                                                                </td>
+                                                                {/* Billing Quantity (Display) */}
+                                                                <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                                                                    <Input
+                                                                        type="text"
+                                                                        value={item.qty_display}
+                                                                        onChange={e => updatePILineItem(item.id, 'qty_display', e.target.value)}
+                                                                        style={{ width: 70, textAlign: 'center', fontSize: 12, height: 32 }}
+                                                                        title="Shown on invoice"
+                                                                    />
+                                                                </td>
+                                                                {/* Rate */}
+                                                                <td style={{ padding: '4px 6px' }}>
+                                                                    <Input
+                                                                        type="number"
+                                                                        value={item.rate}
+                                                                        onChange={e => updatePILineItem(item.id, 'rate', +e.target.value)}
+                                                                        style={{ width: 90, textAlign: 'right', fontSize: 12, height: 32 }}
+                                                                    />
+                                                                </td>
+                                                                {/* Amount */}
+                                                                <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 700, color: '#1e1b4b', fontSize: 13 }}>
+                                                                    {(item.amount || 0).toFixed(1)}
+                                                                </td>
+                                                                {/* Remove */}
+                                                                <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                                                                    <button type="button" onClick={() => removePIRow(item.id)}
+                                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4 }}>
+                                                                        <X size={14} />
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+
+                                                            {/* Detention Sub-Row (only if detention exists) */}
+                                                            {hasDetention && (
+                                                                <tr style={{ background: '#fef3c7', borderBottom: '1px solid #ede9fe' }}>
+                                                                    <td style={{ padding: '6px 10px', textAlign: 'center', color: '#92400e', fontWeight: 700 }}>{transportSr + 1}</td>
+                                                                    {/* Date range: inward to outward */}
+                                                                    <td colSpan={2} style={{ padding: '6px 10px', fontSize: 11, color: '#92400e', whiteSpace: 'nowrap' }}>
+                                                                        {detentionDateRange || `${item.lr_date || ''} (Detention)`}
+                                                                    </td>
+                                                                    <td style={{ padding: '6px 10px', fontSize: 11, color: '#92400e' }}>{item.manifest_no || ''}</td>
+                                                                    <td style={{ padding: '6px 10px', fontSize: 11, color: '#92400e' }}>{item.vehicle_no || ''}</td>
+                                                                    {/* Actual Qty: empty for detention */}
+                                                                    <td></td>
+                                                                    {/* Billing Qty: detention formula */}
+                                                                    <td style={{ padding: '6px 10px', textAlign: 'center', fontWeight: 600, color: '#92400e' }}>
+                                                                        <Input
+                                                                            type="text"
+                                                                            value={detBillingQty}
+                                                                            readOnly
+                                                                            style={{ width: 70, textAlign: 'center', fontSize: 12, height: 28, background: '#fef9c3', border: '1px solid #fbbf24' }}
+                                                                            title={`Detention: ${detDays} days`}
+                                                                        />
+                                                                    </td>
+                                                                    {/* Detention Rate */}
+                                                                    <td style={{ padding: '4px 6px' }}>
+                                                                        <Input
+                                                                            type="number"
+                                                                            value={item.detention_rate}
+                                                                            onChange={e => updatePILineItem(item.id, 'detention_rate', +e.target.value)}
+                                                                            style={{ width: 90, textAlign: 'right', fontSize: 12, height: 28, background: '#fef9c3', border: '1px solid #fbbf24' }}
+                                                                        />
+                                                                    </td>
+                                                                    {/* Detention Amount */}
+                                                                    <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 700, color: '#ea580c', fontSize: 13 }}>
+                                                                        {(item.detention_amount || 0).toFixed(1)}
+                                                                    </td>
+                                                                    <td></td>
+                                                                </tr>
+                                                            )}
+                                                        </React.Fragment>
+                                                    );
+                                                });
+                                            })()}
                                         </tbody>
-                                        {/* Totals Footer Row */}
                                         <tfoot>
                                             <tr style={{ background: '#1e1b4b', color: 'white', fontWeight: 700 }}>
-                                                <td colSpan={6} style={{ padding: '10px 12px', textAlign: 'right', fontSize: 13 }}>TOTAL</td>
-                                                {/* Total Qty Display */}
-                                                <td style={{ padding: '10px 8px', textAlign: 'center', fontSize: 13, color: '#666' }}>
-                                                    {/* Display string qty does not sum naturally, show N/A or count */}
-                                                    -
-                                                </td>
-                                                {/* Total Actual Qty (calc) */}
-                                                <td style={{ padding: '10px 8px', textAlign: 'center', fontSize: 13, background: '#d97706', color: 'white' }}>
-                                                    {piLineItems.reduce((s, i) => s + (i.actual_qty || 0), 0)}
-                                                </td>
-                                                {/* Rate total: blank */}
-                                                <td></td>
-                                                {/* Total Amount */}
-                                                <td style={{ padding: '10px 12px', textAlign: 'right', fontSize: 14, color: '#a5f3fc' }}>
-                                                    ₹{piLineItems.reduce((s, i) => s + (i.amount || 0), 0).toLocaleString('en-IN')}
-                                                </td>
-                                                {/* Total Detention Days */}
+                                                <td colSpan={5} style={{ padding: '10px 12px', textAlign: 'right', fontSize: 13 }}>Total</td>
                                                 <td style={{ padding: '10px 8px', textAlign: 'center', fontSize: 13 }}>
-                                                    {piLineItems.reduce((s, i) => s + (i.detention_days || 0), 0)}
-                                                </td>
-                                                {/* Det Rate: blank */}
-                                                <td></td>
-                                                {/* Total Detention Amount */}
-                                                <td style={{ padding: '10px 12px', textAlign: 'right', fontSize: 14, color: '#fcd34d' }}>
-                                                    ₹{piLineItems.reduce((s, i) => s + (i.detention_amount || 0), 0).toLocaleString('en-IN')}
+                                                    {piLineItems.reduce((s, i) => s + (i.actual_qty || 0), 0).toFixed(2)}
                                                 </td>
                                                 <td></td>
-                                            </tr>
-                                            {/* Grand Row: Transport + Detention combined */}
-                                            <tr style={{ background: '#312e81', color: 'white' }}>
-                                                <td colSpan={9} style={{ padding: '8px 12px', textAlign: 'right', fontSize: 13, fontWeight: 700 }}>
-                                                    Taxable Amount (Transport + Detention)
+                                                <td></td>
+                                                <td style={{ padding: '10px 12px', textAlign: 'right', fontSize: 14, color: '#a5f3fc' }}>
+                                                    {piLineItems.reduce((s, i) => s + (i.amount || 0) + (i.detention_amount || 0), 0).toLocaleString('en-IN')}
                                                 </td>
-                                                <td colSpan={5} style={{ padding: '8px 12px', textAlign: 'right', fontSize: 15, fontWeight: 800, color: '#6ee7f7' }}>
-                                                    ₹{(piLineItems.reduce((s, i) => s + (i.amount || 0) + (i.detention_amount || 0), 0)).toLocaleString('en-IN')}
-                                                </td>
+                                                <td></td>
                                             </tr>
                                         </tfoot>
                                     </table>
                                     <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef3c7', border: '1px solid #fbbf24', borderRadius: 8, fontSize: 11, color: '#92400e' }}>
-                                        <strong>Note:</strong> The "Actual Qty" column (amber/yellow) is used only for calculating Amount (Actual Qty × Rate) and is <strong>not printed</strong> on the invoice. The "Qty (Display)" is what appears on the invoice.
+                                        <strong>Note:</strong> If an LR has detention days &gt; 0, a detention sub-row is automatically added below it showing the date range and detention charges. Detention rows appear in amber.
                                     </div>
                                 </div>
                             )}
