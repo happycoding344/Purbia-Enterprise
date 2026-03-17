@@ -94,7 +94,7 @@ class InvoiceController extends Controller
                             'distance_range' => $piItem['distance_range'],
                             'description' => "Transportation for LR {$piItem['lr_no']} ({$piItem['distance_range']} Kms)",
                             'sac_code' => '996511',
-                            'qty' => $piItem['qty_display'], // Display quantity
+                            'qty' => $piItem['actual_qty'], // Use numeric actual_qty, not the display string
                             'qty_display' => $piItem['qty_display'],
                             'actual_qty' => $piItem['actual_qty'], // Actual quantity for calculation
                             'unit' => 'Per trip',
