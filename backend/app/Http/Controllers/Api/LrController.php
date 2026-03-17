@@ -16,7 +16,7 @@ class LrController extends Controller
 {
     public function index()
     {
-        return response()->json(Lr::with(['items', 'vehicle', 'locationFrom', 'toCity', 'fromCity'])->orderBy('lr_date', 'desc')->get());
+        return response()->json(Lr::with(['items', 'vehicle', 'locationFrom', 'toCity', 'fromCity', 'billingParty'])->orderBy('lr_date', 'desc')->get());
     }
 
     public function store(Request $request)
