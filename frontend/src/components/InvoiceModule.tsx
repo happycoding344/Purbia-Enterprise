@@ -1042,7 +1042,7 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                                     // Format inward/outward dates for detention row
                                                     const formatShortDate = (d: string | undefined) => {
                                                         if (!d) return '';
-                                                        try { return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch { return d; }
+                                                        try { return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch(_e) { return d || ''; }
                                                     };
                                                     const lr = lrRecords.find(r => r.id === item.lr_id);
                                                     const inwardDate = lr?.inward_time ? formatShortDate(lr.inward_time) : '';
@@ -1053,7 +1053,7 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                                     const detBillingQty = detDays > 0 ? `${detDays + 1}-1=${detDays}` : '0';
 
                                                     return (
-                                                        <React.Fragment key={item.id}>
+                                                        <>
                                                             {/* Transport Row */}
                                                             <tr style={{ background: idx % 2 === 0 ? '#faf5ff' : 'white', borderBottom: hasDetention ? 'none' : '1px solid #ede9fe' }}>
                                                                 <td style={{ padding: '6px 10px', textAlign: 'center', color: '#64748b', fontWeight: 700 }}>{transportSr}</td>
@@ -1140,7 +1140,7 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                                                     <td></td>
                                                                 </tr>
                                                             )}
-                                                        </React.Fragment>
+                                                        </>
                                                     );
                                                 });
                                             })()}
