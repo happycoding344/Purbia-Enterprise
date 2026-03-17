@@ -49,8 +49,8 @@ class InvoiceController extends Controller
             'pi_items' => 'nullable|array',
             'pi_items.*.lr_id' => 'required|exists:lrs,id',
             'pi_items.*.lr_no' => 'required|string',
-            'pi_items.*.distance_range' => 'required|string',
-            'pi_items.*.qty_display' => 'required|numeric',
+            'pi_items.*.distance_range' => 'nullable|string',
+            'pi_items.*.qty_display' => 'required|string',
             'pi_items.*.actual_qty' => 'required|numeric',
             'pi_items.*.rate' => 'required|numeric',
             'pi_items.*.amount' => 'required|numeric',
@@ -171,6 +171,19 @@ class InvoiceController extends Controller
             'lr_ids' => 'required_if:business_type,PI|array',
             'lr_ids.*' => 'exists:lrs,id',
 
+            // PI specific line items
+            'pi_items' => 'nullable|array',
+            'pi_items.*.lr_id' => 'required|exists:lrs,id',
+            'pi_items.*.lr_no' => 'required|string',
+            'pi_items.*.distance_range' => 'nullable|string',
+            'pi_items.*.qty_display' => 'required|string',
+            'pi_items.*.actual_qty' => 'required|numeric',
+            'pi_items.*.rate' => 'required|numeric',
+            'pi_items.*.amount' => 'required|numeric',
+            'pi_items.*.detention_days' => 'nullable|numeric',
+            'pi_items.*.detention_rate' => 'nullable|numeric',
+            'pi_items.*.detention_amount' => 'nullable|numeric',
+
             // Calculations
             'amount' => 'required|numeric',
             'gst_amount' => 'required|numeric',
@@ -198,6 +211,32 @@ class InvoiceController extends Controller
             // Handle PI LRs
             if ($request->business_type === 'PI') {
                 $invoice->lrs()->sync($request->lr_ids);
+
+                // Handle PI Line items - delete old items and create new ones
+                $invoice->items()->delete();
+                if ($request->has('pi_items') && is_array($request->pi_items)) {
+                    foreach ($request->pi_items as $piItem) {
+                        $invoice->items()->create([
+                            'lr_id' => $piItem['lr_id'],
+                            'lr_no' => $piItem['lr_no'],
+                            'distance_range' => $piItem['distance_range'] ?? null,
+                            'description' => "Transportation for LR {$piItem['lr_no']} (" . ($piItem['distance_range'] ?? '') . " Kms)",
+                            'sac_code' => '996511',
+                            'qty' => $piItem['actual_qty'], // Provide a numeric value for compatibility
+                            'qty_display' => $piItem['qty_display'],
+                            'actual_qty' => $piItem['actual_qty'],
+                            'unit' => 'Per trip',
+                            'rate' => $piItem['rate'],
+                            'amount' => $piItem['amount'],
+                            'cgst' => $piItem['amount'] * 0.09,
+                            'sgst' => $piItem['amount'] * 0.09,
+                            'total' => $piItem['amount'] * 1.18,
+                            'detention_days' => $piItem['detention_days'] ?? 0,
+                            'detention_rate' => $piItem['detention_rate'] ?? 0,
+                            'detention_amount' => $piItem['detention_amount'] ?? 0,
+                        ]);
+                    }
+                }
             }
 
             // Handle Attachments

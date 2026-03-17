@@ -77,7 +77,17 @@ const STATIC_LINE_ITEMS = [
         unit: 'Per trip'
     },
     {
+        description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 20-50 Kms (one side).',
+        sac_code: '996511',
+        unit: 'Per trip'
+    },
+    {
         description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 50-60 Kms (one side).',
+        sac_code: '996511',
+        unit: 'Per trip'
+    },
+    {
+        description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 60-70 Kms (one side).',
         sac_code: '996511',
         unit: 'Per trip'
     },
@@ -88,6 +98,11 @@ const STATIC_LINE_ITEMS = [
     },
     {
         description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 80-90 Kms (one side).',
+        sac_code: '996511',
+        unit: 'Per trip'
+    },
+    {
+        description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 90+ Kms (one side).',
         sac_code: '996511',
         unit: 'Per trip'
     },
@@ -900,7 +915,7 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                     </thead>
                                     <tbody>
                                         {items.map((item, idx) => {
-                                            const isStaticRow = idx < 5; // First 5 rows are static
+                                            const isStaticRow = idx < STATIC_LINE_ITEMS.length; // First n rows are static
                                             return (
                                                 <tr key={item.id} style={{ background: isStaticRow ? '#f8fafc' : 'white' }}>
                                                     <td style={{ padding: '8px 12px', textAlign: 'center', color: '#64748b', fontWeight: isStaticRow ? 600 : 400 }}>{idx + 1}</td>

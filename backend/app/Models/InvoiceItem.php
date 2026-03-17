@@ -39,7 +39,7 @@ class InvoiceItem extends Model
         'cgst' => 'decimal:2',
         'sgst' => 'decimal:2',
         'total' => 'decimal:2',
-        'qty_display' => 'decimal:2',
+        // 'qty_display' is now a string to allow custom text (e.g., "10 MT")
         'actual_qty' => 'decimal:2',
         'detention_days' => 'decimal:2',
         'detention_rate' => 'decimal:2',
