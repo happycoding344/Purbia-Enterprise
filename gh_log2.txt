@@ -1,0 +1,15 @@
+﻿build-and-deploy	Deploy frontend dist to Hostinger	∩╗┐2026-03-17T16:19:38.4226083Z ##[group]Run sshpass -p "***" \
+build-and-deploy	Deploy frontend dist to Hostinger	2026-03-17T16:19:38.4226466Z [36;1msshpass -p "***" \[0m
+build-and-deploy	Deploy frontend dist to Hostinger	2026-03-17T16:19:38.4226797Z [36;1m  scp -P $SSH_PORT -o StrictHostKeyChecking=no -r \[0m
+build-and-deploy	Deploy frontend dist to Hostinger	2026-03-17T16:19:38.4227140Z [36;1m  ./frontend/dist/* \[0m
+build-and-deploy	Deploy frontend dist to Hostinger	2026-03-17T16:19:38.4227417Z [36;1m  $SSH_USER@$SSH_HOST:$DEPLOY_PATH/public/[0m
+build-and-deploy	Deploy frontend dist to Hostinger	2026-03-17T16:19:38.4275345Z shell: /usr/bin/bash -e {0}
+build-and-deploy	Deploy frontend dist to Hostinger	2026-03-17T16:19:38.4275652Z env:
+build-and-deploy	Deploy frontend dist to Hostinger	2026-03-17T16:19:38.4275840Z   SSH_HOST: 82.25.125.224
+build-and-deploy	Deploy frontend dist to Hostinger	2026-03-17T16:19:38.4276065Z   SSH_PORT: 65002
+build-and-deploy	Deploy frontend dist to Hostinger	2026-03-17T16:19:38.4276279Z   SSH_USER: u678926284
+build-and-deploy	Deploy frontend dist to Hostinger	2026-03-17T16:19:38.4276624Z   DEPLOY_PATH: /home/u678926284/domains/purbiaenterprise.com/public_html/auth
+build-and-deploy	Deploy frontend dist to Hostinger	2026-03-17T16:19:38.4277013Z ##[endgroup]
+build-and-deploy	Deploy frontend dist to Hostinger	2026-03-17T16:19:39.5433753Z Warning: Permanently added '[82.25.125.224]:65002' (ED25519) to the list of known hosts.
+build-and-deploy	Deploy frontend dist to Hostinger	2026-03-17T16:19:42.5548748Z Permission denied, please try again.
+build-and-deploy	Deploy frontend dist to Hostinger	2026-03-17T16:19:42.5574195Z ##[error]Process completed with exit code 5.

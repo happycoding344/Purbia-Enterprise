@@ -72,43 +72,33 @@ type PIInvoiceLineItem = {
 // Static predefined line items from the invoice template
 const STATIC_LINE_ITEMS = [
     {
-        description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 10-20 Kms (one side).',
-        sac_code: '996511',
+        description: 'Item code - 45696\nEmpty Cont. Drum - Dahej to Beil Dahej',
+        sac_code: '998399',
         unit: 'Per trip'
     },
     {
-        description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 20-50 Kms (one side).',
-        sac_code: '996511',
+        description: 'Item code - 45697\nEmpty Cont. Drum - Saykha to Beil Dahej',
+        sac_code: '998399',
         unit: 'Per trip'
     },
     {
-        description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 50-60 Kms (one side).',
-        sac_code: '996511',
+        description: 'Item code - 45698\nEmpty Cont. Drum - Jhagadiya to Beil Dahej',
+        sac_code: '998399',
         unit: 'Per trip'
     },
     {
-        description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 60-70 Kms (one side).',
-        sac_code: '996511',
+        description: 'Item code - 45699\nEmpty Cont. Drum - Panoli to Beil Dahej',
+        sac_code: '998399',
         unit: 'Per trip'
     },
     {
-        description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 70-80 Kms (one side).',
-        sac_code: '996511',
-        unit: 'Per trip'
-    },
-    {
-        description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 80-90 Kms (one side).',
-        sac_code: '996511',
-        unit: 'Per trip'
-    },
-    {
-        description: 'Transportation & Loading / Unloading of empty contaminated drums in range of 90+ Kms (one side).',
-        sac_code: '996511',
+        description: 'Item code - 45700\nEmpty Cont. Drum - Ankleshwar to Beil Dahej',
+        sac_code: '998399',
         unit: 'Per trip'
     },
     {
         description: 'Detention',
-        sac_code: '996511',
+        sac_code: '998399',
         unit: 'Per day'
     }
 ];
@@ -591,7 +581,9 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                 });
             } else {
                 // For PI, send both LR IDs and detailed line item data
-                selectedLRs.forEach((id, i) => fd.append(`lr_ids[${i}]`, String(id)));
+                // Derive lr_ids from piLineItems to ensure they're always in sync
+                const lrIds = piLineItems.map(item => item.lr_id).filter(id => id > 0);
+                lrIds.forEach((id, i) => fd.append(`lr_ids[${i}]`, String(id)));
 
                 // Send PI line items with all details
                 piLineItems.forEach((item, i) => {
