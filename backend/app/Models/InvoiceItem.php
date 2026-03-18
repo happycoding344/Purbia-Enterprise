@@ -24,6 +24,11 @@ class InvoiceItem extends Model
         // PI Industries specific fields
         'lr_id',
         'lr_no',
+        'manifest_no',
+        'vehicle_no',
+        'lr_date',
+        'inward_date',
+        'outward_date',
         'distance_range',
         'qty_display',
         'actual_qty',
