@@ -161,112 +161,173 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
                 )}
 
                 {/* Items Table */}
-                <table style={{ ...tbl }}>
-                    <colgroup>
-                        <col style={{ width: '6%' }} />
-                        <col style={{ width: isBEIL ? '34%' : '20%' }} />
-                        {!isBEIL && <col style={{ width: '14%' }} />}
-                        <col style={{ width: '9%' }} />
-                        <col style={{ width: '6%' }} />
-                        <col style={{ width: '7%' }} />
-                        <col style={{ width: '9%' }} />
-                        <col style={{ width: '10%' }} />
-                        <col style={{ width: '8%' }} />
-                        <col style={{ width: '8%' }} />
-                        <col style={{ width: '11%' }} />
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th style={cellHeader}>Sr.</th>
-                            <th style={{ ...cellHeader, textAlign: 'left' }}>
-                                {isBEIL ? 'Item Description' : 'Detail of Vehicles'}
-                            </th>
-                            {!isBEIL && (
-                                <th style={{ ...cellHeader, textAlign: 'left' }}>Particulars</th>
-                            )}
-                            <th style={cellHeader}>SAC Code</th>
-                            <th style={cellHeader}>Qty</th>
-                            <th style={cellHeader}>Unit</th>
-                            <th style={cellHeader}>Unit Rate</th>
-                            <th style={cellHeader}>Amount<br/>(Rs.)</th>
-                            <th style={cellHeader}>CGST<br/>9%</th>
-                            <th style={cellHeader}>SGST<br/>9%</th>
-                            <th style={cellHeader}>Total<br/>Amt.</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {invoice.items && invoice.items.length > 0 ? (
-                            <>
-                                {invoice.items.map((item: any, idx: number) => (
-                                    <tr key={idx}>
-                                        <td style={cellCenter}>{idx + 1}</td>
-                                        <td style={{ ...cell, verticalAlign: 'top' }}>
-                                            {isBEIL ? (
-                                                <div style={{ whiteSpace: 'pre-wrap' }}>{item.description}</div>
-                                            ) : (
-                                                <div style={{ lineHeight: 1.4 }}>
-                                                    <strong>Date: </strong>{fmtDate(item.lr_date)}<br />
-                                                    <strong>LR: </strong>{item.lr_no || '-'}<br />
-                                                    <strong>Manif: </strong>{item.manifest_no || '-'}<br />
-                                                    <strong>Veh: </strong>{item.vehicle_no || '-'}
-                                                </div>
-                                            )}
-                                        </td>
-                                        {!isBEIL && (
-                                            <td style={{ ...cell, verticalAlign: 'top' }}>
-                                                {item.description}
-                                                {item.detention_days > 0 && (
-                                                    <div style={{ marginTop: 4, fontWeight: 700, fontSize: '9px' }}>
-                                                        Detention: {item.detention_days} days @ ₹{item.detention_rate}/day
-                                                    </div>
-                                                )}
-                                            </td>
-                                        )}
-                                        <td style={cellCenter}>{item.sac_code}</td>
-                                        <td style={cellCenter}>
-                                            {isBEIL ? item.qty : (item.qty_display ?? item.actual_qty ?? item.qty)}
-                                        </td>
-                                        <td style={cellCenter}>{item.unit}</td>
-                                        <td style={cellRight}>{fmt(item.unit_rate || item.rate)}</td>
-                                        <td style={cellRight}>{fmt(item.amount)}</td>
-                                        <td style={cellRight}>{fmt(item.cgst)}</td>
-                                        <td style={cellRight}>{fmt(item.sgst)}</td>
-                                        <td style={cellRight}>{fmt(item.total || item.total_amount)}</td>
-                                    </tr>
-                                ))}
-
-                                {/* PI Totals row */}
-                                {!isBEIL && (
-                                    <tr style={{ backgroundColor: '#f9fafb', fontWeight: 700 }}>
-                                        <td colSpan={3} style={{ ...cell, textAlign: 'right' }}>TOTAL:</td>
-                                        <td style={cellCenter}>—</td>
-                                        <td style={cellCenter}>
-                                            {invoice.items.reduce(
-                                                (s: number, i: any) => s + (parseFloat(i.actual_qty ?? i.qty) || 0),
-                                                0
-                                            ).toFixed(2)}
-                                        </td>
-                                        <td style={cellCenter}>—</td>
-                                        <td style={cellRight}>—</td>
-                                        <td style={cellRight}>{fmt(invoice.amount)}</td>
-                                        <td style={cellRight}>{fmt(invoice.cgst_amount || (invoice.gst_amount / 2))}</td>
-                                        <td style={cellRight}>{fmt(invoice.sgst_amount || (invoice.gst_amount / 2))}</td>
-                                        <td style={cellRight}>{fmt(invoice.total_amount)}</td>
-                                    </tr>
-                                )}
-                            </>
-                        ) : (
+                {isBEIL ? (
+                    /* ── BEIL: Original format ────────────────── */
+                    <table style={{ ...tbl }}>
+                        <colgroup>
+                            <col style={{ width: '6%' }} />
+                            <col style={{ width: '34%' }} />
+                            <col style={{ width: '9%' }} />
+                            <col style={{ width: '6%' }} />
+                            <col style={{ width: '7%' }} />
+                            <col style={{ width: '9%' }} />
+                            <col style={{ width: '10%' }} />
+                            <col style={{ width: '8%' }} />
+                            <col style={{ width: '8%' }} />
+                            <col style={{ width: '11%' }} />
+                        </colgroup>
+                        <thead>
                             <tr>
-                                <td
-                                    colSpan={isBEIL ? 10 : 11}
-                                    style={{ ...cell, textAlign: 'center', color: '#9ca3af', fontStyle: 'italic', padding: 20 }}
-                                >
-                                    No items listed
-                                </td>
+                                <th style={cellHeader}>Sr.</th>
+                                <th style={{ ...cellHeader, textAlign: 'left' }}>Item Description</th>
+                                <th style={cellHeader}>SAC Code</th>
+                                <th style={cellHeader}>Qty</th>
+                                <th style={cellHeader}>Unit</th>
+                                <th style={cellHeader}>Unit Rate</th>
+                                <th style={cellHeader}>Amount<br/>(Rs.)</th>
+                                <th style={cellHeader}>CGST<br/>9%</th>
+                                <th style={cellHeader}>SGST<br/>9%</th>
+                                <th style={cellHeader}>Total<br/>Amt.</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {invoice.items && invoice.items.length > 0 ? (
+                                <>
+                                    {invoice.items.map((item: any, idx: number) => (
+                                        <tr key={idx}>
+                                            <td style={cellCenter}>{idx + 1}</td>
+                                            <td style={{ ...cell, verticalAlign: 'top' }}>
+                                                <div style={{ whiteSpace: 'pre-wrap' }}>{item.description}</div>
+                                            </td>
+                                            <td style={cellCenter}>{item.sac_code}</td>
+                                            <td style={cellCenter}>{item.qty}</td>
+                                            <td style={cellCenter}>{item.unit}</td>
+                                            <td style={cellRight}>{fmt(item.unit_rate || item.rate)}</td>
+                                            <td style={cellRight}>{fmt(item.amount)}</td>
+                                            <td style={cellRight}>{fmt(item.cgst)}</td>
+                                            <td style={cellRight}>{fmt(item.sgst)}</td>
+                                            <td style={cellRight}>{fmt(item.total || item.total_amount)}</td>
+                                        </tr>
+                                    ))}
+                                </>
+                            ) : (
+                                <tr>
+                                    <td colSpan={10} style={{ ...cell, textAlign: 'center', color: '#9ca3af', fontStyle: 'italic', padding: 20 }}>
+                                        No items listed
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                ) : (
+                    /* ── PI: New format matching Invoice type 2 ── */
+                    <table style={{ ...tbl }}>
+                        <colgroup>
+                            <col style={{ width: '6%' }} />
+                            <col style={{ width: '12%' }} />
+                            <col style={{ width: '8%' }} />
+                            <col style={{ width: '12%' }} />
+                            <col style={{ width: '14%' }} />
+                            <col style={{ width: '11%' }} />
+                            <col style={{ width: '11%' }} />
+                            <col style={{ width: '10%' }} />
+                            <col style={{ width: '14%' }} />
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th style={cellHeader}>Sr.<br/>No.</th>
+                                <th style={cellHeader}>Date</th>
+                                <th style={cellHeader}>L/R<br/>No.</th>
+                                <th style={cellHeader}>Manifest<br/>No</th>
+                                <th style={cellHeader}>Vehicle No.</th>
+                                <th style={cellHeader}>Actual<br/>Quantity</th>
+                                <th style={cellHeader}>Billing<br/>Quantity</th>
+                                <th style={cellHeader}>Rate</th>
+                                <th style={cellHeader}>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {invoice.items && invoice.items.length > 0 ? (
+                                <>
+                                    {(() => {
+                                        let srNo = 0;
+                                        return invoice.items.map((item: any, idx: number) => {
+                                            srNo++;
+                                            const transportSr = srNo;
+                                            const detDays = parseFloat(item.detention_days) || 0;
+                                            const detRate = parseFloat(item.detention_rate) || 0;
+                                            const detAmount = parseFloat(item.detention_amount) || (detDays * detRate);
+                                            const hasDetention = detDays > 0 && detRate > 0;
+                                            if (hasDetention) srNo++;
+
+                                            // Format inward/outward for detention row
+                                            const itemDate = fmtDate(item.lr_date);
+                                            const detBillingQty = detDays > 0 ? `${Math.ceil(detDays) + 1}-1=${Math.ceil(detDays)}` : '';
+
+                                            return (
+                                                <React.Fragment key={idx}>
+                                                    {/* Transport Row */}
+                                                    <tr>
+                                                        <td style={cellCenter}>{transportSr}</td>
+                                                        <td style={cellCenter}>{itemDate}</td>
+                                                        <td style={cellCenter}>{item.lr_no || '-'}</td>
+                                                        <td style={cellCenter}>{item.manifest_no || '-'}</td>
+                                                        <td style={cellCenter}>{item.vehicle_no || '-'}</td>
+                                                        <td style={cellRight}>{parseFloat(item.actual_qty || item.qty || 0).toFixed(2)}</td>
+                                                        <td style={cellCenter}>{item.qty_display || item.actual_qty || item.qty || '-'}</td>
+                                                        <td style={cellRight}>{fmt(item.rate || item.unit_rate)}</td>
+                                                        <td style={cellRight}>{fmt(item.amount)}</td>
+                                                    </tr>
+                                                    {/* Detention Sub-Row */}
+                                                    {hasDetention && (
+                                                        <tr>
+                                                            <td style={cellCenter}>{transportSr + 1}</td>
+                                                            <td colSpan={2} style={{ ...cell, fontSize: '9px' }}>
+                                                                {item.inward_date && item.outward_date
+                                                                    ? `${fmtDate(item.inward_date)} To ${fmtDate(item.outward_date)}`
+                                                                    : `${itemDate} (Detention)`}
+                                                            </td>
+                                                            <td style={cellCenter}>{item.manifest_no || '-'}</td>
+                                                            <td style={cellCenter}>{item.vehicle_no || '-'}</td>
+                                                            <td style={cellCenter}></td>
+                                                            <td style={cellCenter}>{detBillingQty}</td>
+                                                            <td style={cellRight}>{fmt(detRate)}</td>
+                                                            <td style={cellRight}>{fmt(detAmount)}</td>
+                                                        </tr>
+                                                    )}
+                                                </React.Fragment>
+                                            );
+                                        });
+                                    })()}
+                                    {/* Total Row */}
+                                    <tr style={{ fontWeight: 700 }}>
+                                        <td colSpan={5} style={{ ...cell, textAlign: 'right' }}>Total</td>
+                                        <td style={cellRight}>
+                                            {invoice.items.reduce((s: number, i: any) => s + (parseFloat(i.actual_qty ?? i.qty) || 0), 0).toFixed(2)}
+                                        </td>
+                                        <td style={cellCenter}></td>
+                                        <td style={cellCenter}></td>
+                                        <td style={cellRight}>
+                                            {fmt(invoice.items.reduce((s: number, i: any) => {
+                                                const amt = parseFloat(i.amount) || 0;
+                                                const detDays = parseFloat(i.detention_days) || 0;
+                                                const detRate = parseFloat(i.detention_rate) || 0;
+                                                const detAmt = parseFloat(i.detention_amount) || (detDays * detRate);
+                                                return s + amt + (detDays > 0 ? detAmt : 0);
+                                            }, 0))}
+                                        </td>
+                                    </tr>
+                                </>
+                            ) : (
+                                <tr>
+                                    <td colSpan={9} style={{ ...cell, textAlign: 'center', color: '#9ca3af', fontStyle: 'italic', padding: 20 }}>
+                                        No items listed
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                )}
 
                 {!isBEIL && (
                     <div style={{ fontSize: '9px', marginTop: 2 }}>*Minimum Quantity</div>
