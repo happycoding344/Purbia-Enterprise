@@ -28,13 +28,14 @@ The system now supports two distinct industry-specific invoice formats with spec
 - **Static Mapping**: Description fields are auto-mapped based on these item codes as per the `Beil.pdf` standard.
 
 ### PI Industries
-- **Format**: New table structure based on "Invoice type 2".
+- **Format**: Dynamic table structure separating "Actual Quantity" and "Billing Quantity".
 - **Dynamic Columns**:
-    - **Detention**: If an LR has detention days > 0, a sub-row is automatically generated below the LR transportation row.
-    - **Inward/Outward Details**: The detention sub-row displays the date range and billing calculation (e.g., `3-1=2`).
+    - **Detention**: Automatically handles detention logic and displays a sub-row below the LR row. 
+    - **Flexible Data Entry**: The `lr_date`, `inward_date`, and `outward_date` fields have been converted to text (`VARCHAR`) in the database. This allows users to manually type exact strings rather than strict calendar dates.
+    - **Detention Quantities**: Users can manually define an `Actual Qty` specifically for the detention sub-row (stored as `detention_qty_display`).
 - **Auto-Population**: When selecting an LR, the system automatically fetches:
     - Manifest No, Vehicle Registration, LR Date.
-    - Inward Time and Outward Time (stored as `inward_date` and `outward_date` in invoice items).
+    - Inward Time and Outward Time. All these can be arbitrarily typed over by the user.
 
 ### Inline Master Creation
 - **Feature**: "+" buttons added next to the **Billing Party** and **Delivery Place** dropdowns in the Invoice module.
@@ -59,13 +60,14 @@ The system now supports two distinct industry-specific invoice formats with spec
 ## 4. Technical Implementation Reference
 
 ### Database Schema Updates
-- **Columns added to `invoice_items`**:
+- **Columns modified/added to `invoice_items`**:
     - `manifest_no` (string)
     - `vehicle_no` (string)
-    - `lr_date` (date)
-    - `inward_date` (datetime)
-    - `outward_date` (datetime)
-- **Model Modifications**: `InvoiceItem.php` includes these in `$fillable` and handles decimal casting for `qty_display`.
+    - `lr_date` (string/VARCHAR) - *Changed to string to avoid DateTime errors on text input.*
+    - `inward_date` (string/VARCHAR) - *Changed to string to avoid DateTime errors on text input.*
+    - `outward_date` (string/VARCHAR) - *Changed to string to avoid DateTime errors on text input.*
+    - `detention_qty_display` (string) - *Custom actual quantity override for detention items.*
+- **Model Modifications**: `InvoiceItem.php` includes these in `$fillable` and handles strict parsing exclusions.
 
 ### Backend Controller Logic (`InvoiceController.php`)
 - **Lookup vs. Override**:
@@ -80,6 +82,15 @@ The system now supports two distinct industry-specific invoice formats with spec
 - **Retrofitting Invoices**: Invoices created prior to March 2026 lack the extra LR detail columns. To "fix" an old invoice, it should be edited and re-saved using the new Edit Dialog.
 - **Detention Calculation**: Currently uses a standard formula (Days - 1). Any deviations in detention policy should be updated in `calculateDetentionDays` within `InvoiceModule.tsx`.
 - **PDF Margins**: A4 margins are optimized in `InvoicePrint.tsx` using CSS `@media print` rules.
+
+---
+
+## 6. Pre-Printed Letterhead Support (March 2026)
+- **Feature**: Both Invoice generation and history tables now include a **Letterhead PDF** export option.
+- **Header & Footer Stripping**: This mode explicitly hides the digital header and footer images (`header-1.jpg`, `footer.jpg`).
+- **Physical Layout Synchronisation**:
+  - The top header space is preserved using 7 lines (`&nbsp;<br/>`) to allow the physical letterhead to sit securely above the body content.
+  - The `flex: 1` pushing the Authorised Signatory panel to the absolute bottom was removed. Now, the Bank Details block and Authorised Signatory block sit tightly grouped directly underneath the final line items, leaving the bottom footer entirely blank for the pre-printed paper.
 
 ---
 *Document generated for Purbia Enterprise Development Reference.*
