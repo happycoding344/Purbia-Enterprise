@@ -95,14 +95,18 @@ class InvoiceController extends Controller
                         // Look up the LR to get details for the invoice PDF
                         $lr = !empty($piItem['lr_id']) ? \App\Models\Lr::with('vehicle')->find($piItem['lr_id']) : null;
 
+                        $parseDate = function($val, $format = 'Y-m-d H:i:s') {
+                            return !empty($val) ? \Carbon\Carbon::parse($val)->format($format) : null;
+                        };
+
                         $invoice->items()->create([
                             'lr_id' => !empty($piItem['lr_id']) ? $piItem['lr_id'] : null,
                             'lr_no' => $piItem['lr_no'],
                             'manifest_no' => $piItem['manifest_no'] ?? ($lr->manifest_no ?? null),
                             'vehicle_no' => $piItem['vehicle_no'] ?? ($lr->vehicle->registration_no ?? null),
-                            'lr_date' => $piItem['lr_date'] ?? ($lr->lr_date ?? null),
-                            'inward_date' => $piItem['inward_date'] ?? ($lr->inward_time ?? null),
-                            'outward_date' => $piItem['outward_date'] ?? ($lr->outward_time ?? null),
+                            'lr_date' => $parseDate($piItem['lr_date'] ?? ($lr->lr_date ?? null), 'Y-m-d'),
+                            'inward_date' => $parseDate($piItem['inward_date'] ?? ($lr->inward_time ?? null)),
+                            'outward_date' => $parseDate($piItem['outward_date'] ?? ($lr->outward_time ?? null)),
                             'distance_range' => $piItem['distance_range'],
                             'description' => "Transportation for LR {$piItem['lr_no']} ({$piItem['distance_range']} Kms)",
                             'sac_code' => '996511',
@@ -236,14 +240,18 @@ class InvoiceController extends Controller
                         // Look up the LR to get details for the invoice PDF
                         $lr = !empty($piItem['lr_id']) ? \App\Models\Lr::with('vehicle')->find($piItem['lr_id']) : null;
 
+                        $parseDate = function($val, $format = 'Y-m-d H:i:s') {
+                            return !empty($val) ? \Carbon\Carbon::parse($val)->format($format) : null;
+                        };
+
                         $invoice->items()->create([
                             'lr_id' => !empty($piItem['lr_id']) ? $piItem['lr_id'] : null,
                             'lr_no' => $piItem['lr_no'],
                             'manifest_no' => $piItem['manifest_no'] ?? ($lr->manifest_no ?? null),
                             'vehicle_no' => $piItem['vehicle_no'] ?? ($lr->vehicle->registration_no ?? null),
-                            'lr_date' => $piItem['lr_date'] ?? ($lr->lr_date ?? null),
-                            'inward_date' => $piItem['inward_date'] ?? ($lr->inward_time ?? null),
-                            'outward_date' => $piItem['outward_date'] ?? ($lr->outward_time ?? null),
+                            'lr_date' => $parseDate($piItem['lr_date'] ?? ($lr->lr_date ?? null), 'Y-m-d'),
+                            'inward_date' => $parseDate($piItem['inward_date'] ?? ($lr->inward_time ?? null)),
+                            'outward_date' => $parseDate($piItem['outward_date'] ?? ($lr->outward_time ?? null)),
                             'distance_range' => $piItem['distance_range'] ?? null,
                             'description' => "Transportation for LR {$piItem['lr_no']} (" . ($piItem['distance_range'] ?? '') . " Kms)",
                             'sac_code' => '996511',
