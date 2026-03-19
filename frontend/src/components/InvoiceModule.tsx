@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
     Plus, Trash2, Download, FileText, Building2,
-    ChevronRight, Upload, X
+    ChevronRight, Upload, X, Printer
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { InvoicePrint } from './InvoicePrint';
@@ -665,7 +665,7 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
         }
     };
 
-    const handleSaveAsPDF = async () => {
+    const handleSaveAsPDF = async (noHeaderFooter = false) => {
         try {
             // Create invoice data
             const invoiceData = {
@@ -723,7 +723,7 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
             };
 
             // Set preview to render component
-            setPreviewInvoice(invoiceData);
+            setPreviewInvoice({ ...invoiceData, hideHeaderFooter: noHeaderFooter });
 
             // Wait for component to render
             await new Promise(resolve => setTimeout(resolve, 500));
@@ -1302,7 +1302,11 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                    <Button type="button" variant="outline" onClick={handleSaveAsPDF} disabled={!form.invoice_no}>
+                    <Button type="button" variant="outline" onClick={() => handleSaveAsPDF(true)} disabled={!form.invoice_no} style={{ color: '#14b8a6', borderColor: '#14b8a6' }}>
+                        <Printer size={16} className="mr-2" />
+                        Letterhead PDF
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => handleSaveAsPDF(false)} disabled={!form.invoice_no}>
                         <Download size={16} className="mr-2" />
                         Save as PDF
                     </Button>
@@ -1320,7 +1324,7 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
             {/* Hidden invoice component for PDF generation */}
             {previewInvoice && (
                 <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
-                    <InvoicePrint invoice={previewInvoice} businessType={businessType} />
+                    <InvoicePrint invoice={previewInvoice} businessType={businessType} hideHeaderFooter={previewInvoice.hideHeaderFooter} />
                 </div>
             )}
         </div>

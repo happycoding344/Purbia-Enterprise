@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/axios';
 import { Input } from '@/components/ui/input';
-import { Trash2, Search, FileText, Download, Edit, Eye } from 'lucide-react';
+import { Trash2, Search, FileText, Download, Edit, Eye, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { InvoicePrint } from './InvoicePrint';
@@ -40,6 +40,7 @@ export default function InvoiceHistory() {
     const [previewDialogData, setPreviewDialogData] = useState<any>(null);
     const [showEditDialog, setShowEditDialog] = useState(false);
     const [editInvoiceData, setEditInvoiceData] = useState<any>(null);
+    const [printNoHeaderFooter, setPrintNoHeaderFooter] = useState(false);
 
     const fetchInvoices = () => {
         setLoading(true);
@@ -132,9 +133,10 @@ export default function InvoiceHistory() {
         }
     };
 
-    const handleDownloadPDF = async (inv: Invoice) => {
+    const handleDownloadPDF = async (inv: Invoice, noHeaderFooter = false) => {
         try {
             const printData = mapInvoiceForPrint(inv);
+            setPrintNoHeaderFooter(noHeaderFooter);
 
             // Set preview to render component
             setPreviewInvoice(printData);
@@ -299,11 +301,18 @@ export default function InvoiceHistory() {
                                                 <Eye size={14} />
                                             </button>
                                             <button
-                                                onClick={() => handleDownloadPDF(inv)}
+                                                onClick={() => handleDownloadPDF(inv, false)}
                                                 style={{ padding: '6px', borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', color: '#3b82f6' }}
                                                 title="Download PDF"
                                             >
                                                 <Download size={14} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDownloadPDF(inv, true)}
+                                                style={{ padding: '6px', borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', color: '#14b8a6' }}
+                                                title="Download Letterhead PDF (No Header/Footer)"
+                                            >
+                                                <Printer size={14} />
                                             </button>
                                             <button
                                                 onClick={() => handleEdit(inv)}
@@ -386,7 +395,7 @@ export default function InvoiceHistory() {
             {/* Hidden invoice component for PDF generation */}
             {previewInvoice && (
                 <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
-                    <InvoicePrint invoice={previewInvoice} businessType={previewInvoice.business_type} />
+                    <InvoicePrint invoice={previewInvoice} businessType={previewInvoice.business_type} hideHeaderFooter={printNoHeaderFooter} />
                 </div>
             )}
         </div>

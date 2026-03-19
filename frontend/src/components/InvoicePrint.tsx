@@ -4,12 +4,14 @@ interface InvoicePrintProps {
     invoice: any;
     businessType: 'BEIL' | 'PI';
     containerId?: string;
+    hideHeaderFooter?: boolean;
 }
 
 export const InvoicePrint: React.FC<InvoicePrintProps> = ({
     invoice,
     businessType,
     containerId = 'invoice-print-container',
+    hideHeaderFooter = false,
 }) => {
     const isBEIL = businessType === 'BEIL';
 
@@ -91,12 +93,15 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
             <div style={{ width: '100%', flexShrink: 0, 
                           display: 'flex', justifyContent: 'center',
                           padding: '0' }}>
-                {/* Changed to object-fit contain so it scales naturally without stretching */}
-                <img
-                    src="/header-1.jpg"
-                    alt="Header"
-                    style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }}
-                />
+                {hideHeaderFooter ? (
+                    <div style={{ height: '70px', paddingLeft: '30px', paddingTop: '10px' }}>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;</div>
+                ) : (
+                    <img
+                        src="/header-1.jpg"
+                        alt="Header"
+                        style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }}
+                    />
+                )}
             </div>
 
             {/* BODY CONTENT */}
@@ -333,7 +338,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
                     <div style={{ fontSize: '9px', marginTop: 2 }}>*Minimum Quantity</div>
                 )}
 
-                <div style={{flex: 1}}></div> {/* Pushes next elements downward if space exists */}
+                <div style={{ height: 20 }}></div>
 
                 {/* Bank Details + Totals Table */}
                 <table style={{ ...tbl }}>
@@ -400,6 +405,8 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
                     </tbody>
                 </table>
 
+                <div style={{flex: 1}}></div> {/* Pushes Signature to the bottom */}
+
                 {/* Authorised Signatory */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 30, marginBottom: 10 }}>
                     <div style={{ textAlign: 'center', minWidth: 180 }}>
@@ -415,12 +422,15 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
 
             {/* FOOTER IMAGE */}
             <div style={{ width: '100%', flexShrink: 0, padding: 0 }}>
-                {/* Changed to object-fit contain so it scales naturally without stretching */}
-                <img
-                    src="/footer-1.jpg"
-                    alt="Footer"
-                    style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }}
-                />
+                {hideHeaderFooter ? (
+                    <div style={{ height: '40px' }}>&nbsp;<br/>&nbsp;</div>
+                ) : (
+                    <img
+                        src="/footer-1.jpg"
+                        alt="Footer"
+                        style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }}
+                    />
+                )}
             </div>
         </div>
     );
