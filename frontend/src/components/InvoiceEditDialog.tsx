@@ -36,8 +36,9 @@ type PILineItem = {
     inward_date: string;
     outward_date: string;
     distance_range: string;
-    qty_display: number;
+    qty_display: string;
     actual_qty: number;
+    detention_qty_display?: string;
     unit: string;
     rate: number;
     amount: number;
@@ -141,8 +142,9 @@ export default function InvoiceEditDialog({ invoice, open, onClose, onSaved }: I
                 inward_date: it.inward_date || '',
                 outward_date: it.outward_date || '',
                 distance_range: it.distance_range || '',
-                qty_display: Number(it.qty_display ?? it.qty) || 0,
+                qty_display: it.qty_display ?? String(it.qty || ''),
                 actual_qty: Number(it.actual_qty ?? it.qty) || 0,
+                detention_qty_display: it.detention_qty_display || '',
                 unit: it.unit || 'Per trip',
                 rate: Number(it.rate) || 0,
                 amount: Number(it.amount) || 0,
@@ -467,7 +469,7 @@ export default function InvoiceEditDialog({ invoice, open, onClose, onSaved }: I
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                                         <thead>
                                             <tr style={{ background: '#f5f3ff' }}>
-                                                {['Date', 'LR No.', 'Manifest No.', 'Vehicle No.', 'Distance Range', 'Qty (Display)', 'Actual Qty', 'Unit', 'Rate (₹)', 'Amount', 'Det. Days', 'Det. Rate', 'Det. Amt'].map(h => (
+                                                {['Date', 'LR No.', 'Manifest No.', 'Vehicle No.', 'Distance Range', 'Qty (Display)', 'Actual Qty', 'Unit', 'Rate (₹)', 'Amount', 'Det. Date', 'Det. Qty', 'Det. Days', 'Det. Rate', 'Det. Amt'].map(h => (
                                                     <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: '#6d28d9', borderBottom: '1px solid #ede9fe', whiteSpace: 'nowrap' }}>{h}</th>
                                                 ))}
                                             </tr>
@@ -476,7 +478,7 @@ export default function InvoiceEditDialog({ invoice, open, onClose, onSaved }: I
                                             {piItems.map((item) => (
                                                 <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                                     <td style={{ padding: '4px 6px' }}>
-                                                        <Input type="date" value={item.lr_date ? item.lr_date.split('T')[0] : ''} onChange={e => updatePIItem(item.id, 'lr_date', e.target.value)} style={{ width: 110, height: 32, fontSize: 11 }} title="LR Date" />
+                                                        <Input type="text" value={item.lr_date || ''} onChange={e => updatePIItem(item.id, 'lr_date', e.target.value)} style={{ width: 110, height: 32, fontSize: 11 }} title="LR Date" placeholder="e.g. 14-03-2026" />
                                                     </td>
                                                     <td style={{ padding: '6px 10px', fontWeight: 600 }}>{item.lr_no}</td>
                                                     <td style={{ padding: '4px 6px' }}>
@@ -497,6 +499,12 @@ export default function InvoiceEditDialog({ invoice, open, onClose, onSaved }: I
                                                         <Input type="number" value={item.rate} onChange={e => updatePIItem(item.id, 'rate', +e.target.value)} style={{ width: 90, height: 32, fontSize: 12 }} />
                                                     </td>
                                                     <td style={{ padding: '6px 10px', fontWeight: 600 }}>₹{(item.amount || 0).toFixed(0)}</td>
+                                                    <td style={{ padding: '4px 6px' }}>
+                                                        <Input type="text" value={item.inward_date || ''} onChange={e => updatePIItem(item.id, 'inward_date', e.target.value)} style={{ width: 110, height: 32, fontSize: 11 }} placeholder="e.g. 14-03 To 21-03" title="Detention Date Range" />
+                                                    </td>
+                                                    <td style={{ padding: '4px 6px' }}>
+                                                        <Input type="text" value={item.detention_qty_display || ''} onChange={e => updatePIItem(item.id, 'detention_qty_display', e.target.value)} style={{ width: 80, height: 32, fontSize: 12 }} placeholder="Text" />
+                                                    </td>
                                                     <td style={{ padding: '4px 6px' }}>
                                                         <Input type="number" value={item.detention_days} onChange={e => updatePIItem(item.id, 'detention_days', +e.target.value)} style={{ width: 70, height: 32, fontSize: 12 }} />
                                                     </td>

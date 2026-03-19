@@ -35,6 +35,7 @@ class InvoiceItem extends Model
         'detention_days',
         'detention_rate',
         'detention_amount',
+        'detention_qty_display',
     ];
 
     protected $casts = [

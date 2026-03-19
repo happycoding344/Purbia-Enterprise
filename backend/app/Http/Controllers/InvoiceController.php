@@ -51,8 +51,9 @@ class InvoiceController extends Controller
             'pi_items.*.lr_no' => 'required|string',
             'pi_items.*.manifest_no' => 'nullable|string',
             'pi_items.*.vehicle_no' => 'nullable|string',
-            'pi_items.*.inward_date' => 'nullable|date',
-            'pi_items.*.outward_date' => 'nullable|date',
+            'pi_items.*.lr_date' => 'nullable|string',
+            'pi_items.*.inward_date' => 'nullable|string',
+            'pi_items.*.outward_date' => 'nullable|string',
             'pi_items.*.distance_range' => 'nullable|string',
             'pi_items.*.qty_display' => 'required|string',
             'pi_items.*.actual_qty' => 'required|numeric',
@@ -61,6 +62,7 @@ class InvoiceController extends Controller
             'pi_items.*.detention_days' => 'nullable|numeric',
             'pi_items.*.detention_rate' => 'nullable|numeric',
             'pi_items.*.detention_amount' => 'nullable|numeric',
+            'pi_items.*.detention_qty_display' => 'nullable|string',
 
             // Calculations
             'amount' => 'required|numeric',
@@ -104,9 +106,9 @@ class InvoiceController extends Controller
                             'lr_no' => $piItem['lr_no'],
                             'manifest_no' => $piItem['manifest_no'] ?? ($lr->manifest_no ?? null),
                             'vehicle_no' => $piItem['vehicle_no'] ?? ($lr->vehicle->registration_no ?? null),
-                            'lr_date' => $parseDate($piItem['lr_date'] ?? ($lr->lr_date ?? null), 'Y-m-d'),
-                            'inward_date' => $parseDate($piItem['inward_date'] ?? ($lr->inward_time ?? null)),
-                            'outward_date' => $parseDate($piItem['outward_date'] ?? ($lr->outward_time ?? null)),
+                            'lr_date' => !empty($piItem['lr_date']) ? $piItem['lr_date'] : $parseDate($lr->lr_date ?? null, 'Y-m-d'),
+                            'inward_date' => !empty($piItem['inward_date']) ? $piItem['inward_date'] : $parseDate($lr->inward_time ?? null),
+                            'outward_date' => !empty($piItem['outward_date']) ? $piItem['outward_date'] : $parseDate($lr->outward_time ?? null),
                             'distance_range' => $piItem['distance_range'],
                             'description' => "Transportation for LR {$piItem['lr_no']} ({$piItem['distance_range']} Kms)",
                             'sac_code' => '996511',
@@ -122,6 +124,7 @@ class InvoiceController extends Controller
                             'detention_days' => $piItem['detention_days'] ?? 0,
                             'detention_rate' => $piItem['detention_rate'] ?? 0,
                             'detention_amount' => $piItem['detention_amount'] ?? 0,
+                            'detention_qty_display' => $piItem['detention_qty_display'] ?? null,
                         ]);
                     }
                 }
@@ -193,9 +196,9 @@ class InvoiceController extends Controller
             'pi_items.*.lr_no' => 'required|string',
             'pi_items.*.manifest_no' => 'nullable|string',
             'pi_items.*.vehicle_no' => 'nullable|string',
-            'pi_items.*.lr_date' => 'nullable|date',
-            'pi_items.*.inward_date' => 'nullable|date',
-            'pi_items.*.outward_date' => 'nullable|date',
+            'pi_items.*.lr_date' => 'nullable|string',
+            'pi_items.*.inward_date' => 'nullable|string',
+            'pi_items.*.outward_date' => 'nullable|string',
             'pi_items.*.distance_range' => 'nullable|string',
             'pi_items.*.qty_display' => 'required|string',
             'pi_items.*.actual_qty' => 'required|numeric',
@@ -204,6 +207,7 @@ class InvoiceController extends Controller
             'pi_items.*.detention_days' => 'nullable|numeric',
             'pi_items.*.detention_rate' => 'nullable|numeric',
             'pi_items.*.detention_amount' => 'nullable|numeric',
+            'pi_items.*.detention_qty_display' => 'nullable|string',
 
             // Calculations
             'amount' => 'required|numeric',
@@ -249,9 +253,9 @@ class InvoiceController extends Controller
                             'lr_no' => $piItem['lr_no'],
                             'manifest_no' => $piItem['manifest_no'] ?? ($lr->manifest_no ?? null),
                             'vehicle_no' => $piItem['vehicle_no'] ?? ($lr->vehicle->registration_no ?? null),
-                            'lr_date' => $parseDate($piItem['lr_date'] ?? ($lr->lr_date ?? null), 'Y-m-d'),
-                            'inward_date' => $parseDate($piItem['inward_date'] ?? ($lr->inward_time ?? null)),
-                            'outward_date' => $parseDate($piItem['outward_date'] ?? ($lr->outward_time ?? null)),
+                            'lr_date' => !empty($piItem['lr_date']) ? $piItem['lr_date'] : $parseDate($lr->lr_date ?? null, 'Y-m-d'),
+                            'inward_date' => !empty($piItem['inward_date']) ? $piItem['inward_date'] : $parseDate($lr->inward_time ?? null),
+                            'outward_date' => !empty($piItem['outward_date']) ? $piItem['outward_date'] : $parseDate($lr->outward_time ?? null),
                             'distance_range' => $piItem['distance_range'] ?? null,
                             'description' => "Transportation for LR {$piItem['lr_no']} (" . ($piItem['distance_range'] ?? '') . " Kms)",
                             'sac_code' => '996511',
@@ -267,6 +271,7 @@ class InvoiceController extends Controller
                             'detention_days' => $piItem['detention_days'] ?? 0,
                             'detention_rate' => $piItem['detention_rate'] ?? 0,
                             'detention_amount' => $piItem['detention_amount'] ?? 0,
+                            'detention_qty_display' => $piItem['detention_qty_display'] ?? null,
                         ]);
                     }
                 }

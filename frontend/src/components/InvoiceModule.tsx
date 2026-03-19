@@ -503,8 +503,8 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                 detention_days: detentionDays,
                 detention_rate: detRate,
                 detention_amount: detAmount,
-                inward_time: lr.inward_time || '',
-                outward_time: lr.outward_time || '',
+                inward_time: (lr.inward_time && lr.outward_time) ? `${new Date(lr.inward_time).toLocaleDateString('en-IN', {day:'2-digit',month:'2-digit',year:'numeric'})} To ${new Date(lr.outward_time).toLocaleDateString('en-IN', {day:'2-digit',month:'2-digit',year:'numeric'})}` : (lr.inward_time ? lr.inward_time.split('T')[0] : ''),
+                outward_time: '',
             };
         }).filter(Boolean) as PIInvoiceLineItem[];
 
@@ -1103,7 +1103,7 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                                             <tr style={{ background: idx % 2 === 0 ? '#faf5ff' : 'white', borderBottom: hasDetention ? 'none' : '1px solid #ede9fe' }}>
                                                                 <td style={{ padding: '6px 10px', textAlign: 'center', color: '#64748b', fontWeight: 700 }}>{transportSr}</td>
                                                                 <td style={{ padding: '4px 6px' }}>
-                                                                    <Input type="date" value={item.lr_date ? item.lr_date.split('T')[0] : ''} onChange={e => updatePILineItem(item.id, 'lr_date', e.target.value)} style={{ width: 110, height: 32, fontSize: 11 }} title="LR Date" />
+                                                                    <Input type="text" value={item.lr_date || ''} onChange={e => updatePILineItem(item.id, 'lr_date', e.target.value)} style={{ width: 110, height: 32, fontSize: 11 }} title="LR Date" placeholder="e.g. 14-03-2026" />
                                                                 </td>
                                                                 <td style={{ padding: '4px 6px' }}>
                                                                     <Input value={item.lr_no} onChange={e => updatePILineItem(item.id, 'lr_no', e.target.value)} style={{ width: 100, height: 32, fontSize: 11, fontWeight: 600 }} placeholder="LR No." />
@@ -1167,17 +1167,23 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                                             {hasDetention && (
                                                                 <tr style={{ background: '#fef3c7', borderBottom: '1px solid #ede9fe' }}>
                                                                     <td style={{ padding: '6px 10px', textAlign: 'center', color: '#92400e', fontWeight: 700 }}>{transportSr + 1}</td>
-                                                                    {/* Date range: inward to outward */}
+                                                                    {/* Date range: user can enter text */}
                                                                     <td style={{ padding: '4px 6px', display: 'flex', gap: 4, alignItems: 'center' }}>
-                                                                        <Input type="date" value={item.inward_time ? item.inward_time.split('T')[0] : ''} onChange={e => updatePILineItem(item.id, 'inward_time', e.target.value)} style={{ width: 110, height: 28, fontSize: 10, background: '#fef9c3', border: '1px solid #fbbf24' }} title="Inward Date" />
-                                                                        <span style={{ color: '#92400e', fontSize: 10 }}>To</span>
-                                                                        <Input type="date" value={item.outward_time ? item.outward_time.split('T')[0] : ''} onChange={e => updatePILineItem(item.id, 'outward_time', e.target.value)} style={{ width: 110, height: 28, fontSize: 10, background: '#fef9c3', border: '1px solid #fbbf24' }} title="Outward Date" />
+                                                                        <Input type="text" value={item.inward_time || ''} onChange={e => updatePILineItem(item.id, 'inward_time', e.target.value)} style={{ width: 150, height: 28, fontSize: 10, background: '#fef9c3', border: '1px solid #fbbf24' }} title="Detention Date Range Text" placeholder="e.g. 14-03 To 21-03" />
                                                                     </td>
                                                                     <td style={{ padding: '6px 10px', fontSize: 11, color: '#92400e', fontWeight: 600 }}>{item.lr_no || ''}</td>
                                                                     <td style={{ padding: '6px 10px', fontSize: 11, color: '#92400e' }}>{item.manifest_no || ''}</td>
                                                                     <td style={{ padding: '6px 10px', fontSize: 11, color: '#92400e' }}>{item.vehicle_no || ''}</td>
-                                                                    {/* Actual Qty: empty for detention */}
-                                                                    <td></td>
+                                                                    {/* Actual Qty: detention formatted payload */}
+                                                                    <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                                                                        <Input
+                                                                            type="text"
+                                                                            value={item.detention_qty_display || ''}
+                                                                            onChange={e => updatePILineItem(item.id, 'detention_qty_display', e.target.value)}
+                                                                            style={{ width: 70, textAlign: 'center', fontSize: 12, height: 28, background: '#fef9c3', border: '1px solid #fbbf24' }}
+                                                                            placeholder="Text"
+                                                                        />
+                                                                    </td>
                                                                     {/* Billing Qty: detention days (editable) */}
                                                                     <td style={{ padding: '4px 6px', textAlign: 'center' }}>
                                                                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>

@@ -224,12 +224,13 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
                     <table style={{ ...tbl }}>
                         <colgroup>
                             <col style={{ width: '6%' }} />
-                            <col style={{ width: '16%' }} />
-                            <col style={{ width: '10%' }} />
+                            <col style={{ width: '12%' }} />
+                            <col style={{ width: '8%' }} />
+                            <col style={{ width: '12%' }} />
                             <col style={{ width: '14%' }} />
-                            <col style={{ width: '16%' }} />
-                            <col style={{ width: '12%' }} />
-                            <col style={{ width: '12%' }} />
+                            <col style={{ width: '11%' }} />
+                            <col style={{ width: '11%' }} />
+                            <col style={{ width: '10%' }} />
                             <col style={{ width: '14%' }} />
                         </colgroup>
                         <thead>
@@ -239,7 +240,8 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
                                 <th style={cellHeader}>L/R<br/>No.</th>
                                 <th style={cellHeader}>Manifest<br/>No</th>
                                 <th style={cellHeader}>Vehicle No.</th>
-                                <th style={cellHeader}>Quantity</th>
+                                <th style={cellHeader}>Actual<br/>Quantity</th>
+                                <th style={cellHeader}>Billing<br/>Quantity</th>
                                 <th style={cellHeader}>Rate</th>
                                 <th style={cellHeader}>Amount</th>
                             </tr>
@@ -272,6 +274,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
                                                         <td style={cellCenter}>{item.manifest_no || '-'}</td>
                                                         <td style={cellCenter}>{item.vehicle_no || '-'}</td>
                                                         <td style={{ ...cellCenter, whiteSpace: 'pre-wrap' }}>{item.qty_display || parseFloat(item.actual_qty || item.qty || 0).toFixed(2)}</td>
+                                                        <td style={cellCenter}>{parseFloat(item.actual_qty || item.qty || 0).toFixed(2)}</td>
                                                         <td style={cellRight}>{fmt(item.rate || item.unit_rate)}</td>
                                                         <td style={cellRight}>{fmt(item.amount)}</td>
                                                     </tr>
@@ -280,13 +283,14 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
                                                         <tr>
                                                             <td style={cellCenter}>{transportSr + 1}</td>
                                                             <td style={{ ...cellCenter, fontSize: '9px' }}>
-                                                                {item.inward_date && item.outward_date
-                                                                    ? `${fmtDate(item.inward_date)} To ${fmtDate(item.outward_date)}`
+                                                                {item.inward_date
+                                                                    ? item.inward_date
                                                                     : `Detention`}
                                                             </td>
                                                             <td style={cellCenter}>{item.lr_no || '-'}</td>
                                                             <td style={cellCenter}>{item.manifest_no || '-'}</td>
                                                             <td style={cellCenter}>{item.vehicle_no || '-'}</td>
+                                                            <td style={{ ...cellCenter, whiteSpace: 'pre-wrap' }}>{item.detention_qty_display || ''}</td>
                                                             <td style={cellCenter}>{detBillingQty}</td>
                                                             <td style={cellRight}>{fmt(detRate)}</td>
                                                             <td style={cellRight}>{fmt(detAmount)}</td>
@@ -298,7 +302,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
                                     })()}
                                     {/* Total Row */}
                                     <tr style={{ fontWeight: 700 }}>
-                                        <td colSpan={5} style={{ ...cell, textAlign: 'right' }}>Total</td>
+                                        <td colSpan={6} style={{ ...cell, textAlign: 'right' }}>Total</td>
                                         <td style={cellCenter}>
                                             {invoice.items.reduce((s: number, i: any) => s + (parseFloat(i.actual_qty ?? i.qty) || 0), 0).toFixed(2)}
                                         </td>
