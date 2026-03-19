@@ -449,10 +449,11 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                 distance_range: getDistanceRange(lr.distance || 0),
                 detention_days: detentionDays,
                 detention_rate: lr.detention_rate || 0,
+                inward_time: lr.inward_time || '',
+                outward_time: lr.outward_time || '',
             };
             updated.amount = (updated.actual_qty || 0) * (updated.rate || 0);
             updated.detention_amount = (updated.detention_days || 0) * (updated.detention_rate || 0);
-            return updated;
             return updated;
         }));
     };
@@ -502,6 +503,8 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                 detention_days: detentionDays,
                 detention_rate: detRate,
                 detention_amount: detAmount,
+                inward_time: lr.inward_time || '',
+                outward_time: lr.outward_time || '',
             };
         }).filter(Boolean) as PIInvoiceLineItem[];
 
@@ -527,7 +530,29 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
             detention_days: 0,
             detention_rate: 0,
             detention_amount: 0,
+            inward_time: '',
+            outward_time: '',
         }]);
+    };
+    
+    // Move PI row up
+    const movePIRowUp = (index: number) => {
+        if (index === 0) return;
+        setPiLineItems(prev => {
+            const newItems = [...prev];
+            [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
+            return newItems;
+        });
+    };
+
+    // Move PI row down
+    const movePIRowDown = (index: number) => {
+        if (index === piLineItems.length - 1) return;
+        setPiLineItems(prev => {
+            const newItems = [...prev];
+            [newItems[index + 1], newItems[index]] = [newItems[index], newItems[index + 1]];
+            return newItems;
+        });
     };
 
     // Remove a PI row
@@ -1034,7 +1059,7 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                                 <th style={{ padding: '8px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>Billing<br/>Quantity</th>
                                                 <th style={{ padding: '8px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>Rate</th>
                                                 <th style={{ padding: '8px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>Amount</th>
-                                                <th style={{ padding: '8px 6px', textAlign: 'center', width: 30 }}></th>
+                                                <th style={{ padding: '8px 6px', textAlign: 'center', width: 60 }}>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1064,10 +1089,18 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                                             {/* Transport Row */}
                                                             <tr style={{ background: idx % 2 === 0 ? '#faf5ff' : 'white', borderBottom: hasDetention ? 'none' : '1px solid #ede9fe' }}>
                                                                 <td style={{ padding: '6px 10px', textAlign: 'center', color: '#64748b', fontWeight: 700 }}>{transportSr}</td>
-                                                                <td style={{ padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap' }}>{item.lr_date || '—'}</td>
-                                                                <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1e1b4b' }}>{item.lr_no || '—'}</td>
-                                                                <td style={{ padding: '6px 10px', fontSize: 11 }}>{item.manifest_no || '—'}</td>
-                                                                <td style={{ padding: '6px 10px', fontSize: 11 }}>{item.vehicle_no || '—'}</td>
+                                                                <td style={{ padding: '4px 6px' }}>
+                                                                    <Input type="date" value={item.lr_date ? item.lr_date.split('T')[0] : ''} onChange={e => updatePILineItem(item.id, 'lr_date', e.target.value)} style={{ width: 110, height: 32, fontSize: 11 }} title="LR Date" />
+                                                                </td>
+                                                                <td style={{ padding: '4px 6px' }}>
+                                                                    <Input value={item.lr_no} onChange={e => updatePILineItem(item.id, 'lr_no', e.target.value)} style={{ width: 100, height: 32, fontSize: 11, fontWeight: 600 }} placeholder="LR No." />
+                                                                </td>
+                                                                <td style={{ padding: '4px 6px' }}>
+                                                                    <Input value={item.manifest_no} onChange={e => updatePILineItem(item.id, 'manifest_no', e.target.value)} style={{ width: 90, height: 32, fontSize: 11 }} placeholder="Manifest" />
+                                                                </td>
+                                                                <td style={{ padding: '4px 6px' }}>
+                                                                    <Input value={item.vehicle_no} onChange={e => updatePILineItem(item.id, 'vehicle_no', e.target.value)} style={{ width: 100, height: 32, fontSize: 11 }} placeholder="Vehicle No" />
+                                                                </td>
                                                                 {/* Actual Quantity */}
                                                                 <td style={{ padding: '4px 6px', textAlign: 'center' }}>
                                                                     <Input
@@ -1100,11 +1133,19 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                                                 <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 700, color: '#1e1b4b', fontSize: 13 }}>
                                                                     {(item.amount || 0).toFixed(1)}
                                                                 </td>
-                                                                {/* Remove */}
-                                                                <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                                                                {/* Actions */}
+                                                                <td style={{ padding: '4px 6px', textAlign: 'center', display: 'flex', gap: 4, justifyContent: 'center' }}>
+                                                                    <button type="button" onClick={() => movePIRowUp(idx)} disabled={idx === 0}
+                                                                        style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', color: idx === 0 ? '#cbd5e1' : '#64748b', padding: 2 }}>
+                                                                        <span style={{ fontSize: 16 }}>↑</span>
+                                                                    </button>
+                                                                    <button type="button" onClick={() => movePIRowDown(idx)} disabled={idx === piLineItems.length - 1}
+                                                                        style={{ background: 'none', border: 'none', cursor: idx === piLineItems.length - 1 ? 'default' : 'pointer', color: idx === piLineItems.length - 1 ? '#cbd5e1' : '#64748b', padding: 2 }}>
+                                                                        <span style={{ fontSize: 16 }}>↓</span>
+                                                                    </button>
                                                                     <button type="button" onClick={() => removePIRow(item.id)}
-                                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4 }}>
-                                                                        <X size={14} />
+                                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2, marginLeft: 4 }}>
+                                                                        <X size={16} />
                                                                     </button>
                                                                 </td>
                                                             </tr>
@@ -1114,22 +1155,27 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                                                 <tr style={{ background: '#fef3c7', borderBottom: '1px solid #ede9fe' }}>
                                                                     <td style={{ padding: '6px 10px', textAlign: 'center', color: '#92400e', fontWeight: 700 }}>{transportSr + 1}</td>
                                                                     {/* Date range: inward to outward */}
-                                                                    <td colSpan={2} style={{ padding: '6px 10px', fontSize: 11, color: '#92400e', whiteSpace: 'nowrap' }}>
-                                                                        {detentionDateRange || `${item.lr_date || ''} (Detention)`}
+                                                                    <td colSpan={2} style={{ padding: '4px 6px', display: 'flex', gap: 4, alignItems: 'center' }}>
+                                                                        <Input type="date" value={item.inward_time ? item.inward_time.split('T')[0] : ''} onChange={e => updatePILineItem(item.id, 'inward_time', e.target.value)} style={{ width: 110, height: 28, fontSize: 10, background: '#fef9c3', border: '1px solid #fbbf24' }} title="Inward Date" />
+                                                                        <span style={{ color: '#92400e', fontSize: 10 }}>To</span>
+                                                                        <Input type="date" value={item.outward_time ? item.outward_time.split('T')[0] : ''} onChange={e => updatePILineItem(item.id, 'outward_time', e.target.value)} style={{ width: 110, height: 28, fontSize: 10, background: '#fef9c3', border: '1px solid #fbbf24' }} title="Outward Date" />
                                                                     </td>
                                                                     <td style={{ padding: '6px 10px', fontSize: 11, color: '#92400e' }}>{item.manifest_no || ''}</td>
                                                                     <td style={{ padding: '6px 10px', fontSize: 11, color: '#92400e' }}>{item.vehicle_no || ''}</td>
                                                                     {/* Actual Qty: empty for detention */}
                                                                     <td></td>
-                                                                    {/* Billing Qty: detention formula */}
-                                                                    <td style={{ padding: '6px 10px', textAlign: 'center', fontWeight: 600, color: '#92400e' }}>
-                                                                        <Input
-                                                                            type="text"
-                                                                            value={detBillingQty}
-                                                                            readOnly
-                                                                            style={{ width: 70, textAlign: 'center', fontSize: 12, height: 28, background: '#fef9c3', border: '1px solid #fbbf24' }}
-                                                                            title={`Detention: ${detDays} days`}
-                                                                        />
+                                                                    {/* Billing Qty: detention days (editable) */}
+                                                                    <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+                                                                            <span style={{ fontSize: 10, color: '#b45309' }}>Days:</span>
+                                                                            <Input
+                                                                                type="number"
+                                                                                value={item.detention_days}
+                                                                                onChange={e => updatePILineItem(item.id, 'detention_days', +e.target.value)}
+                                                                                style={{ width: 60, textAlign: 'center', fontSize: 12, height: 28, background: '#fef9c3', border: '1px solid #fbbf24' }}
+                                                                                title="Detention Days"
+                                                                            />
+                                                                        </div>
                                                                     </td>
                                                                     {/* Detention Rate */}
                                                                     <td style={{ padding: '4px 6px' }}>
@@ -1168,7 +1214,12 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                         </tfoot>
                                     </table>
                                     <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef3c7', border: '1px solid #fbbf24', borderRadius: 8, fontSize: 11, color: '#92400e' }}>
-                                        <strong>Note:</strong> If an LR has detention days &gt; 0, a detention sub-row is automatically added below it showing the date range and detention charges. Detention rows appear in amber.
+                                        <strong>Note:</strong> If an LR has detention days &gt; 0 (or you manually enter days &gt; 0), a detention sub-row is automatically added below it. Detention rows appear in amber.
+                                    </div>
+                                    <div style={{ marginTop: 12 }}>
+                                        <Button type="button" variant="outline" onClick={addPIRow} style={{ fontSize: 12, height: 32 }}>
+                                            <Plus size={14} className="mr-2" /> Add Manual Entry
+                                        </Button>
                                     </div>
                                 </div>
                             )}
