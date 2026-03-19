@@ -42,12 +42,12 @@ class InvoiceController extends Controller
             'items.*.sgst' => 'nullable|numeric',
 
             // PI specific LRs
-            'lr_ids' => 'required_if:business_type,PI|array',
+            'lr_ids' => 'nullable|array',
             'lr_ids.*' => 'exists:lrs,id',
 
             // PI specific line items
             'pi_items' => 'nullable|array',
-            'pi_items.*.lr_id' => 'required|exists:lrs,id',
+            'pi_items.*.lr_id' => 'nullable|integer',
             'pi_items.*.lr_no' => 'required|string',
             'pi_items.*.manifest_no' => 'nullable|string',
             'pi_items.*.vehicle_no' => 'nullable|string',
@@ -93,10 +93,10 @@ class InvoiceController extends Controller
                 if ($request->has('pi_items') && is_array($request->pi_items)) {
                     foreach ($request->pi_items as $piItem) {
                         // Look up the LR to get details for the invoice PDF
-                        $lr = \App\Models\Lr::with('vehicle')->find($piItem['lr_id']);
+                        $lr = !empty($piItem['lr_id']) ? \App\Models\Lr::with('vehicle')->find($piItem['lr_id']) : null;
 
                         $invoice->items()->create([
-                            'lr_id' => $piItem['lr_id'],
+                            'lr_id' => !empty($piItem['lr_id']) ? $piItem['lr_id'] : null,
                             'lr_no' => $piItem['lr_no'],
                             'manifest_no' => $piItem['manifest_no'] ?? ($lr->manifest_no ?? null),
                             'vehicle_no' => $piItem['vehicle_no'] ?? ($lr->vehicle->registration_no ?? null),
@@ -180,12 +180,12 @@ class InvoiceController extends Controller
             'items.*.sgst' => 'nullable|numeric',
 
             // PI specific LRs
-            'lr_ids' => 'required_if:business_type,PI|array',
+            'lr_ids' => 'nullable|array',
             'lr_ids.*' => 'exists:lrs,id',
 
             // PI specific line items
             'pi_items' => 'nullable|array',
-            'pi_items.*.lr_id' => 'required|exists:lrs,id',
+            'pi_items.*.lr_id' => 'nullable|integer',
             'pi_items.*.lr_no' => 'required|string',
             'pi_items.*.manifest_no' => 'nullable|string',
             'pi_items.*.vehicle_no' => 'nullable|string',
@@ -234,10 +234,10 @@ class InvoiceController extends Controller
                 if ($request->has('pi_items') && is_array($request->pi_items)) {
                     foreach ($request->pi_items as $piItem) {
                         // Look up the LR to get details for the invoice PDF
-                        $lr = isset($piItem['lr_id']) ? \App\Models\Lr::with('vehicle')->find($piItem['lr_id']) : null;
+                        $lr = !empty($piItem['lr_id']) ? \App\Models\Lr::with('vehicle')->find($piItem['lr_id']) : null;
 
                         $invoice->items()->create([
-                            'lr_id' => $piItem['lr_id'] ?? null,
+                            'lr_id' => !empty($piItem['lr_id']) ? $piItem['lr_id'] : null,
                             'lr_no' => $piItem['lr_no'],
                             'manifest_no' => $piItem['manifest_no'] ?? ($lr->manifest_no ?? null),
                             'vehicle_no' => $piItem['vehicle_no'] ?? ($lr->vehicle->registration_no ?? null),
