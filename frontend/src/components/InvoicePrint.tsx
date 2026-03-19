@@ -94,7 +94,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
                           display: 'flex', justifyContent: 'center',
                           padding: '0' }}>
                 {hideHeaderFooter ? (
-                    <div style={{ height: '70px', paddingLeft: '30px', paddingTop: '10px' }}>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;</div>
+                    <div style={{ height: '70px', paddingLeft: '30px', paddingTop: '10px' }}>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;</div>
                 ) : (
                     <img
                         src="/header-1.jpg"
@@ -404,8 +404,6 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
                         </tr>
                     </tbody>
                 </table>
-
-                <div style={{flex: 1}}></div> {/* Pushes Signature to the bottom */}
 
                 {/* Authorised Signatory */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 30, marginBottom: 10 }}>
