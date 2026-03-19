@@ -481,7 +481,7 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
             const detentionDays = lr.detention_days || calculateDetentionDays(lr.inward_time, lr.outward_time);
             
             // Auto populate logic
-            const actualQty = lr.items && lr.items.length > 0 ? lr.items.reduce((s, i) => s + (Number(i.qty) || 0), 0) : 1;
+            const actualQty = lr.items && lr.items.length > 0 ? lr.items.reduce((s, i) => s + (Number(lr.bill_by === 'Weight' ? i.weight : i.qty) || Number(i.qty) || Number(i.weight) || 0), 0) : 1;
             const rate = lr.items && lr.items.length > 0 ? Number(lr.items[0].rate) || 0 : 0;
             const detRate = Number(lr.detention_rate) || 0;
             const baseAmount = actualQty * rate;
@@ -1114,23 +1114,23 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                                                 <td style={{ padding: '4px 6px' }}>
                                                                     <Input value={item.vehicle_no} onChange={e => updatePILineItem(item.id, 'vehicle_no', e.target.value)} style={{ width: 100, height: 32, fontSize: 11 }} placeholder="Vehicle No" />
                                                                 </td>
-                                                                {/* Actual Quantity */}
-                                                                <td style={{ padding: '4px 6px', textAlign: 'center' }}>
-                                                                    <Input
-                                                                        type="number"
-                                                                        value={item.actual_qty}
-                                                                        onChange={e => updatePILineItem(item.id, 'actual_qty', +e.target.value)}
-                                                                        style={{ width: 70, textAlign: 'center', fontSize: 12, height: 32 }}
-                                                                    />
-                                                                </td>
-                                                                {/* Billing Quantity (Display) */}
+                                                                {/* Actual Quantity (String Input) */}
                                                                 <td style={{ padding: '4px 6px', textAlign: 'center' }}>
                                                                     <Input
                                                                         type="text"
                                                                         value={item.qty_display}
                                                                         onChange={e => updatePILineItem(item.id, 'qty_display', e.target.value)}
                                                                         style={{ width: 70, textAlign: 'center', fontSize: 12, height: 32 }}
-                                                                        title="Shown on invoice"
+                                                                        title="Manual text shown on invoice"
+                                                                    />
+                                                                </td>
+                                                                {/* Billing Quantity (Number Input for calc) */}
+                                                                <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                                                                    <Input
+                                                                        type="number"
+                                                                        value={item.actual_qty}
+                                                                        onChange={e => updatePILineItem(item.id, 'actual_qty', +e.target.value)}
+                                                                        style={{ width: 70, textAlign: 'center', fontSize: 12, height: 32 }}
                                                                     />
                                                                 </td>
                                                                 {/* Rate */}
@@ -1168,11 +1168,12 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                                                                 <tr style={{ background: '#fef3c7', borderBottom: '1px solid #ede9fe' }}>
                                                                     <td style={{ padding: '6px 10px', textAlign: 'center', color: '#92400e', fontWeight: 700 }}>{transportSr + 1}</td>
                                                                     {/* Date range: inward to outward */}
-                                                                    <td colSpan={2} style={{ padding: '4px 6px', display: 'flex', gap: 4, alignItems: 'center' }}>
+                                                                    <td style={{ padding: '4px 6px', display: 'flex', gap: 4, alignItems: 'center' }}>
                                                                         <Input type="date" value={item.inward_time ? item.inward_time.split('T')[0] : ''} onChange={e => updatePILineItem(item.id, 'inward_time', e.target.value)} style={{ width: 110, height: 28, fontSize: 10, background: '#fef9c3', border: '1px solid #fbbf24' }} title="Inward Date" />
                                                                         <span style={{ color: '#92400e', fontSize: 10 }}>To</span>
                                                                         <Input type="date" value={item.outward_time ? item.outward_time.split('T')[0] : ''} onChange={e => updatePILineItem(item.id, 'outward_time', e.target.value)} style={{ width: 110, height: 28, fontSize: 10, background: '#fef9c3', border: '1px solid #fbbf24' }} title="Outward Date" />
                                                                     </td>
+                                                                    <td style={{ padding: '6px 10px', fontSize: 11, color: '#92400e', fontWeight: 600 }}>{item.lr_no || ''}</td>
                                                                     <td style={{ padding: '6px 10px', fontSize: 11, color: '#92400e' }}>{item.manifest_no || ''}</td>
                                                                     <td style={{ padding: '6px 10px', fontSize: 11, color: '#92400e' }}>{item.vehicle_no || ''}</td>
                                                                     {/* Actual Qty: empty for detention */}

@@ -487,7 +487,7 @@ export default function InvoiceEditDialog({ invoice, open, onClose, onSaved }: I
                                                     </td>
                                                     <td style={{ padding: '6px 10px', color: '#64748b' }}>{item.distance_range}</td>
                                                     <td style={{ padding: '4px 6px' }}>
-                                                        <Input type="number" value={item.qty_display} onChange={e => updatePIItem(item.id, 'qty_display', +e.target.value)} style={{ width: 70, height: 32, fontSize: 12 }} />
+                                                        <Input type="text" value={item.qty_display} onChange={e => updatePIItem(item.id, 'qty_display', e.target.value)} style={{ width: 70, height: 32, fontSize: 12 }} />
                                                     </td>
                                                     <td style={{ padding: '4px 6px', background: '#fefce8' }}>
                                                         <Input type="number" value={item.actual_qty} onChange={e => updatePIItem(item.id, 'actual_qty', +e.target.value)} style={{ width: 70, height: 32, fontSize: 12, background: '#fef9c3' }} />
