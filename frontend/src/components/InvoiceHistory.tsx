@@ -80,17 +80,7 @@ export default function InvoiceHistory() {
             cgst_total: inv.cgst_amount,
             sgst_total: inv.sgst_amount,
             total_amount_before_tax: inv.amount,
-            items: inv.business_type === 'BEIL' ? inv.items : inv.lrs?.map((lr: any) => ({
-                description: `LR No: ${lr.lr_no}, Manifest: ${lr.manifest_no || '-'}`,
-                sac_code: inv.hsn_code,
-                qty: 1,
-                unit: 'Trip',
-                unit_rate: lr.total_amount,
-                amount: lr.total_amount,
-                cgst: (lr.total_amount || 0) * 0.09,
-                sgst: (lr.total_amount || 0) * 0.09,
-                total_amount: (lr.total_amount || 0) * 1.18
-            }))
+            items: inv.items
         };
     };
 
