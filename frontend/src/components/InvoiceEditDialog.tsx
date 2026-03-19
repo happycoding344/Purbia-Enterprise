@@ -29,6 +29,7 @@ type LineItem = {
 type PILineItem = {
     id: string | number;
     lr_no: string;
+    lr_id?: number | string;
     distance_range: string;
     qty_display: number;
     actual_qty: number;
@@ -128,6 +129,7 @@ export default function InvoiceEditDialog({ invoice, open, onClose, onSaved }: I
             return invoice.items.map((it: any): PILineItem => ({
                 id: it.id || genId(),
                 lr_no: it.lr_no || '',
+                lr_id: it.lr_id || '',
                 distance_range: it.distance_range || '',
                 qty_display: Number(it.qty_display ?? it.qty) || 0,
                 actual_qty: Number(it.actual_qty ?? it.qty) || 0,
@@ -220,6 +222,7 @@ export default function InvoiceEditDialog({ invoice, open, onClose, onSaved }: I
                 });
             } else {
                 piItems.forEach((item, i) => {
+                    fd.append(`pi_items[${i}][lr_id]`, String(item.lr_id || ''));
                     fd.append(`pi_items[${i}][lr_no]`, item.lr_no);
                     fd.append(`pi_items[${i}][distance_range]`, item.distance_range);
                     fd.append(`pi_items[${i}][qty_display]`, String(item.qty_display));

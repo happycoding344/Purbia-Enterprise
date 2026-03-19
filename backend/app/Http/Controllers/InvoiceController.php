@@ -224,13 +224,21 @@ class InvoiceController extends Controller
                 $invoice->items()->delete();
                 if ($request->has('pi_items') && is_array($request->pi_items)) {
                     foreach ($request->pi_items as $piItem) {
+                        // Look up the LR to get details for the invoice PDF
+                        $lr = isset($piItem['lr_id']) ? \App\Models\Lr::with('vehicle')->find($piItem['lr_id']) : null;
+
                         $invoice->items()->create([
-                            'lr_id' => $piItem['lr_id'],
+                            'lr_id' => $piItem['lr_id'] ?? null,
                             'lr_no' => $piItem['lr_no'],
+                            'manifest_no' => $lr->manifest_no ?? null,
+                            'vehicle_no' => $lr->vehicle->registration_no ?? null,
+                            'lr_date' => $lr->lr_date ?? null,
+                            'inward_date' => $lr->inward_time ?? null,
+                            'outward_date' => $lr->outward_time ?? null,
                             'distance_range' => $piItem['distance_range'] ?? null,
                             'description' => "Transportation for LR {$piItem['lr_no']} (" . ($piItem['distance_range'] ?? '') . " Kms)",
                             'sac_code' => '996511',
-                            'qty' => $piItem['actual_qty'], // Provide a numeric value for compatibility
+                            'qty' => $piItem['actual_qty'],
                             'qty_display' => $piItem['qty_display'],
                             'actual_qty' => $piItem['actual_qty'],
                             'unit' => 'Per trip',
