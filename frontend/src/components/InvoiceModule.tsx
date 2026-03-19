@@ -67,6 +67,8 @@ type PIInvoiceLineItem = {
     detention_days: number;
     detention_rate: number;
     detention_amount: number;
+    inward_time?: string;
+    outward_time?: string;
 };
 
 // Static predefined line items from the invoice template
@@ -589,6 +591,11 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                 piLineItems.forEach((item, i) => {
                     fd.append(`pi_items[${i}][lr_id]`, String(item.lr_id));
                     fd.append(`pi_items[${i}][lr_no]`, item.lr_no);
+                    fd.append(`pi_items[${i}][manifest_no]`, item.manifest_no || '');
+                    fd.append(`pi_items[${i}][vehicle_no]`, item.vehicle_no || '');
+                    fd.append(`pi_items[${i}][lr_date]`, item.lr_date || '');
+                    fd.append(`pi_items[${i}][inward_date]`, item.inward_time || '');
+                    fd.append(`pi_items[${i}][outward_date]`, item.outward_time || '');
                     fd.append(`pi_items[${i}][distance_range]`, item.distance_range);
                     fd.append(`pi_items[${i}][qty_display]`, String(item.qty_display));
                     fd.append(`pi_items[${i}][actual_qty]`, String(item.actual_qty));

@@ -30,6 +30,11 @@ type PILineItem = {
     id: string | number;
     lr_no: string;
     lr_id?: number | string;
+    manifest_no: string;
+    vehicle_no: string;
+    lr_date: string;
+    inward_date: string;
+    outward_date: string;
     distance_range: string;
     qty_display: number;
     actual_qty: number;
@@ -130,6 +135,11 @@ export default function InvoiceEditDialog({ invoice, open, onClose, onSaved }: I
                 id: it.id || genId(),
                 lr_no: it.lr_no || '',
                 lr_id: it.lr_id || '',
+                manifest_no: it.manifest_no || '',
+                vehicle_no: it.vehicle_no || '',
+                lr_date: it.lr_date || '',
+                inward_date: it.inward_date || '',
+                outward_date: it.outward_date || '',
                 distance_range: it.distance_range || '',
                 qty_display: Number(it.qty_display ?? it.qty) || 0,
                 actual_qty: Number(it.actual_qty ?? it.qty) || 0,
@@ -221,9 +231,18 @@ export default function InvoiceEditDialog({ invoice, open, onClose, onSaved }: I
                     fd.append(`items[${i}][total]`, String(item.total_amount));
                 });
             } else {
-                piItems.forEach((item, i) => {
+                // Collect unique lr_ids for PI to satisfy backend validation
+                const lr_ids = Array.from(new Set(piItems.map(item => item.lr_id).filter(Boolean)));
+                lr_ids.forEach((id, i: number) => fd.append(`lr_ids[${i}]`, String(id)));
+
+                piItems.forEach((item, i: number) => {
                     fd.append(`pi_items[${i}][lr_id]`, String(item.lr_id || ''));
                     fd.append(`pi_items[${i}][lr_no]`, item.lr_no);
+                    fd.append(`pi_items[${i}][manifest_no]`, item.manifest_no || '');
+                    fd.append(`pi_items[${i}][vehicle_no]`, item.vehicle_no || '');
+                    fd.append(`pi_items[${i}][lr_date]`, item.lr_date || '');
+                    fd.append(`pi_items[${i}][inward_date]`, item.inward_date || '');
+                    fd.append(`pi_items[${i}][outward_date]`, item.outward_date || '');
                     fd.append(`pi_items[${i}][distance_range]`, item.distance_range);
                     fd.append(`pi_items[${i}][qty_display]`, String(item.qty_display));
                     fd.append(`pi_items[${i}][actual_qty]`, String(item.actual_qty));
@@ -448,7 +467,7 @@ export default function InvoiceEditDialog({ invoice, open, onClose, onSaved }: I
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                                         <thead>
                                             <tr style={{ background: '#f5f3ff' }}>
-                                                {['LR No.', 'Distance Range', 'Qty (Display)', 'Actual Qty', 'Unit', 'Rate (₹)', 'Amount', 'Det. Days', 'Det. Rate', 'Det. Amt'].map(h => (
+                                                {['Date', 'LR No.', 'Manifest No.', 'Vehicle No.', 'Distance Range', 'Qty (Display)', 'Actual Qty', 'Unit', 'Rate (₹)', 'Amount', 'Det. Days', 'Det. Rate', 'Det. Amt'].map(h => (
                                                     <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: '#6d28d9', borderBottom: '1px solid #ede9fe', whiteSpace: 'nowrap' }}>{h}</th>
                                                 ))}
                                             </tr>
@@ -456,7 +475,16 @@ export default function InvoiceEditDialog({ invoice, open, onClose, onSaved }: I
                                         <tbody>
                                             {piItems.map((item) => (
                                                 <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                    <td style={{ padding: '4px 6px' }}>
+                                                        <Input type="date" value={item.lr_date ? item.lr_date.split('T')[0] : ''} onChange={e => updatePIItem(item.id, 'lr_date', e.target.value)} style={{ width: 110, height: 32, fontSize: 11 }} title="LR Date" />
+                                                    </td>
                                                     <td style={{ padding: '6px 10px', fontWeight: 600 }}>{item.lr_no}</td>
+                                                    <td style={{ padding: '4px 6px' }}>
+                                                        <Input value={item.manifest_no} onChange={e => updatePIItem(item.id, 'manifest_no', e.target.value)} style={{ width: 90, height: 32, fontSize: 11 }} title="Manifest No" />
+                                                    </td>
+                                                    <td style={{ padding: '4px 6px' }}>
+                                                        <Input value={item.vehicle_no} onChange={e => updatePIItem(item.id, 'vehicle_no', e.target.value)} style={{ width: 100, height: 32, fontSize: 11 }} title="Vehicle No" />
+                                                    </td>
                                                     <td style={{ padding: '6px 10px', color: '#64748b' }}>{item.distance_range}</td>
                                                     <td style={{ padding: '4px 6px' }}>
                                                         <Input type="number" value={item.qty_display} onChange={e => updatePIItem(item.id, 'qty_display', +e.target.value)} style={{ width: 70, height: 32, fontSize: 12 }} />
