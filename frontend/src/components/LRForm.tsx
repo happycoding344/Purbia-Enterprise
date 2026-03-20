@@ -33,6 +33,11 @@ const lrSchema = z.object({
     // Part 2
     manifest_no: z.string().nullable().optional(),
     manifest_date: z.string().nullable().optional(),
+    inward_date: z.string().nullable().optional(),
+    inward_time_str: z.string().nullable().optional(),
+    outward_date: z.string().nullable().optional(),
+    outward_time_str: z.string().nullable().optional(),
+    // combined (set on submit)
     inward_time: z.string().nullable().optional(),
     outward_time: z.string().nullable().optional(),
     distance: z.string().nullable().optional(),
@@ -80,8 +85,10 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
             ...editLR,
             lr_date: editLR.lr_date ? format(new Date(editLR.lr_date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
             manifest_date: editLR.manifest_date ? format(new Date(editLR.manifest_date), 'yyyy-MM-dd') : null,
-            inward_time: editLR.inward_time ? format(new Date(editLR.inward_time), "yyyy-MM-dd'T'HH:mm") : null,
-            outward_time: editLR.outward_time ? format(new Date(editLR.outward_time), "yyyy-MM-dd'T'HH:mm") : null,
+            inward_date: editLR.inward_time ? editLR.inward_time.substring(0, 10) : '',
+            inward_time_str: editLR.inward_time ? editLR.inward_time.substring(11, 16) : '',
+            outward_date: editLR.outward_time ? editLR.outward_time.substring(0, 10) : '',
+            outward_time_str: editLR.outward_time ? editLR.outward_time.substring(11, 16) : '',
             items: editLR.items?.length > 0 ? editLR.items : [{ item_name: '', unit: 'Kl', rate_type: 'Qty', qty: 0, weight: 0, rate: 0, actual_qty: '' }],
         } : {
             financial_year: '2025-2026',
@@ -100,19 +107,27 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
 
     const watchedValues = watch();
 
+    // Build combined inward/outward strings from split inputs for detention calculation
+    const combinedInward = watchedValues.inward_date && watchedValues.inward_time_str
+        ? `${watchedValues.inward_date}T${watchedValues.inward_time_str}`
+        : watchedValues.inward_date || null;
+    const combinedOutward = watchedValues.outward_date && watchedValues.outward_time_str
+        ? `${watchedValues.outward_date}T${watchedValues.outward_time_str}`
+        : watchedValues.outward_date || null;
+
     // Calculations
     const detentionCalc = useMemo(() => {
-        if (!watchedValues.inward_time || !watchedValues.outward_time) return { diffDays: 0, detentionDays: 0, totalAmount: 0 };
+        if (!combinedInward || !combinedOutward) return { diffDays: 0, detentionDays: 0, totalAmount: 0 };
 
-        const start = new Date(watchedValues.inward_time);
-        const end = new Date(watchedValues.outward_time);
+        const start = new Date(combinedInward);
+        const end = new Date(combinedOutward);
         const diffDays = differenceInDays(end, start);
 
         const detentionDays = Math.max(0, diffDays - (watchedValues.delay_hours || 0));
         const totalAmount = detentionDays * (watchedValues.detention_rate || 0);
 
         return { diffDays, detentionDays, totalAmount };
-    }, [watchedValues.inward_time, watchedValues.outward_time, watchedValues.delay_hours, watchedValues.detention_rate]);
+    }, [combinedInward, combinedOutward, watchedValues.delay_hours, watchedValues.detention_rate]);
 
     const itemsTotal = useMemo(() => {
         return watchedValues.items.reduce((acc, item) => {
@@ -130,7 +145,23 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
         setIsSubmitting(true);
         try {
             const formData = new FormData();
+
+            // Combine split date+time fields into a single ISO string before sending
+            const inwardCombined = data.inward_date && data.inward_time_str
+                ? `${data.inward_date}T${data.inward_time_str}:00`
+                : data.inward_date || null;
+            const outwardCombined = data.outward_date && data.outward_time_str
+                ? `${data.outward_date}T${data.outward_time_str}:00`
+                : data.outward_date || null;
+
+            if (inwardCombined) formData.append('inward_time', inwardCombined);
+            if (outwardCombined) formData.append('outward_time', outwardCombined);
+
+            // Skip the split fields themselves — they are only UI helpers
+            const skipKeys = new Set(['inward_date', 'inward_time_str', 'outward_date', 'outward_time_str', 'inward_time', 'outward_time']);
+
             Object.entries(data).forEach(([key, value]) => {
+                if (skipKeys.has(key)) return;
                 if (key === 'items') {
                     const items = value as any[];
                     items.forEach((item, index) => {
@@ -327,14 +358,39 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
                                     <Label>Manifest Date</Label>
                                     <Input type="date" {...register('manifest_date')} />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label>Inward Date & Time</Label>
-                                    <Input type="datetime-local" lang="en-GB" {...register('inward_time')} />
+                            </div>
+
+                            {/* Inward Date + Time */}
+                            <div className="rounded-lg border border-blue-100 bg-blue-50/30 p-4">
+                                <p className="text-xs font-semibold text-blue-700 uppercase mb-3">Inward Date & Time</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Inward Date</Label>
+                                        <Input type="date" {...register('inward_date')} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Inward Time (24-hour)</Label>
+                                        <Input type="time" {...register('inward_time_str')} />
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label>Outward Date & Time</Label>
-                                    <Input type="datetime-local" lang="en-GB" {...register('outward_time')} />
+                            </div>
+
+                            {/* Outward Date + Time */}
+                            <div className="rounded-lg border border-orange-100 bg-orange-50/30 p-4">
+                                <p className="text-xs font-semibold text-orange-700 uppercase mb-3">Outward Date & Time</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Outward Date</Label>
+                                        <Input type="date" {...register('outward_date')} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Outward Time (24-hour)</Label>
+                                        <Input type="time" {...register('outward_time_str')} />
+                                    </div>
                                 </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 <div className="space-y-2">
                                     <Label>Distance (kms)</Label>
                                     <Input {...register('distance')} />
@@ -445,14 +501,6 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
                                         </CardContent>
                                     </Card>
                                 ))}
-                            </div>
-
-                            <div className="p-4 bg-gray-900 rounded-lg text-white flex justify-between items-center">
-                                <div className="space-y-1">
-                                    <p className="text-xs text-gray-400 uppercase">Items Total Net Amount</p>
-                                    <p className="text-sm font-medium italic">{numberToIndianWords(itemsTotal)}</p>
-                                </div>
-                                <p className="text-2xl font-bold">₹{itemsTotal.toLocaleString()}</p>
                             </div>
 
                             <div className="flex justify-between pt-4">

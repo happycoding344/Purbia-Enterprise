@@ -34,24 +34,33 @@ type LRRecord = {
 const fmtDate = (raw: string | undefined | null): string => {
     if (!raw) return '';
     try {
-        const d = new Date(raw);
-        if (isNaN(d.getTime())) return raw;
-        return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        // Extract date part directly from stored string (e.g. '2026-03-20T14:30:00' => '2026-03-20')
+        const datePart = raw.includes('T') ? raw.substring(0, 10) : raw.substring(0, 10);
+        const [year, month, day] = datePart.split('-');
+        if (!year || !month || !day) return raw;
+        return `${day}/${month}/${year}`;
     } catch (_e) { return raw || ''; }
 };
 
 const fmtTime = (raw: string | undefined | null): string => {
     if (!raw) return '';
     try {
-        const d = new Date(raw);
-        if (isNaN(d.getTime())) return raw;
-        return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
-    } catch (_e) { return raw || ''; }
+        // Extract time directly from stored string — never use new Date() to avoid timezone shifting
+        if (raw.includes('T')) {
+            const timePart = raw.split('T')[1];
+            return timePart ? timePart.substring(0, 5) : ''; // return HH:mm
+        }
+        // If it's just a time string like '14:30:00'
+        if (raw.includes(':')) return raw.substring(0, 5);
+        return '';
+    } catch (_e) { return ''; }
 };
 
 const fmtDateTime = (raw: string | undefined | null): string => {
     if (!raw) return '';
-    return `${fmtDate(raw)} ${fmtTime(raw)}`.trim();
+    const date = fmtDate(raw);
+    const time = fmtTime(raw);
+    return time ? `${date} ${time}` : date;
 };
 
 const calcDiffDays = (inward: string | null, outward: string | null): string => {
