@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -115,26 +115,22 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
         ? `${watchedValues.outward_date}T${watchedValues.outward_time_str}`
         : watchedValues.outward_date || null;
 
-    // Calculations
-    const detentionCalc = useMemo(() => {
+    // Detention calculation — computed inline (no useMemo) so it always reflects latest watched values
+    const detentionCalc = (() => {
         if (!combinedInward || !combinedOutward) return { diffDays: 0, detentionDays: 0, totalAmount: 0 };
-
         const start = new Date(combinedInward);
         const end = new Date(combinedOutward);
         const diffDays = differenceInDays(end, start);
-
         const detentionDays = Math.max(0, diffDays - (watchedValues.delay_hours || 0));
         const totalAmount = detentionDays * (watchedValues.detention_rate || 0);
-
         return { diffDays, detentionDays, totalAmount };
-    }, [combinedInward, combinedOutward, watchedValues.delay_hours, watchedValues.detention_rate]);
+    })();
 
-    const itemsTotal = useMemo(() => {
-        return watchedValues.items.reduce((acc, item) => {
-            const qty = item.rate_type === 'Qty' ? Number(item.qty || 0) : Number(item.weight || 0);
-            return acc + (qty * Number(item.rate || 0));
-        }, 0);
-    }, [watchedValues.items]);
+    // Items total — computed inline to avoid stale useMemo array reference
+    const itemsTotal = watchedValues.items.reduce((acc, item) => {
+        const qty = item.rate_type === 'Qty' ? Number(item.qty || 0) : Number(item.weight || 0);
+        return acc + qty * Number(item.rate || 0);
+    }, 0);
 
     const grossAmount = detentionCalc.totalAmount + itemsTotal;
     const sgst = (grossAmount * (watchedValues.gst_percent || 0)) / 200;
@@ -360,32 +356,44 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
                                 </div>
                             </div>
 
-                            {/* Inward Date + Time */}
+                                {/* Inward Date + Time */}
                             <div className="rounded-lg border border-blue-100 bg-blue-50/30 p-4">
-                                <p className="text-xs font-semibold text-blue-700 uppercase mb-3">Inward Date & Time</p>
+                                <p className="text-xs font-semibold text-blue-700 uppercase mb-3">Inward Date &amp; Time</p>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label>Inward Date</Label>
                                         <Input type="date" {...register('inward_date')} />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Inward Time (24-hour)</Label>
-                                        <Input type="time" {...register('inward_time_str')} />
+                                        <Label>Inward Time <span className="text-xs font-normal text-blue-600">(24-hr, e.g. 14:30)</span></Label>
+                                        <Input
+                                            type="text"
+                                            placeholder="HH:MM"
+                                            maxLength={5}
+                                            pattern="^([01]\d|2[0-3]):[0-5]\d$"
+                                            {...register('inward_time_str')}
+                                        />
                                     </div>
                                 </div>
                             </div>
 
                             {/* Outward Date + Time */}
                             <div className="rounded-lg border border-orange-100 bg-orange-50/30 p-4">
-                                <p className="text-xs font-semibold text-orange-700 uppercase mb-3">Outward Date & Time</p>
+                                <p className="text-xs font-semibold text-orange-700 uppercase mb-3">Outward Date &amp; Time</p>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label>Outward Date</Label>
                                         <Input type="date" {...register('outward_date')} />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Outward Time (24-hour)</Label>
-                                        <Input type="time" {...register('outward_time_str')} />
+                                        <Label>Outward Time <span className="text-xs font-normal text-orange-600">(24-hr, e.g. 23:15)</span></Label>
+                                        <Input
+                                            type="text"
+                                            placeholder="HH:MM"
+                                            maxLength={5}
+                                            pattern="^([01]\d|2[0-3]):[0-5]\d$"
+                                            {...register('outward_time_str')}
+                                        />
                                     </div>
                                 </div>
                             </div>
