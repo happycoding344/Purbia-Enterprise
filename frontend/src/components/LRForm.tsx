@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Upload, X } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 
 const lrSchema = z.object({
@@ -47,6 +47,7 @@ const lrSchema = z.object({
         qty: z.coerce.number().nullable().optional(),
         weight: z.coerce.number().nullable().optional(),
         rate: z.coerce.number().min(0, 'Rate is required'),
+        actual_qty: z.string().nullable().optional(),
     })).min(1, 'At least one item is required'),
 
     // Part 4
@@ -79,20 +80,20 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
             ...editLR,
             lr_date: editLR.lr_date ? format(new Date(editLR.lr_date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
             manifest_date: editLR.manifest_date ? format(new Date(editLR.manifest_date), 'yyyy-MM-dd') : null,
-            inward_time: editLR.inward_time || null,
-            outward_time: editLR.outward_time || null,
-            items: editLR.items || [{ item_name: '', unit: 'Kl', rate_type: 'Qty', qty: 0, weight: 0, rate: 0 }],
+            inward_time: editLR.inward_time ? format(new Date(editLR.inward_time), "yyyy-MM-dd'T'HH:mm") : null,
+            outward_time: editLR.outward_time ? format(new Date(editLR.outward_time), "yyyy-MM-dd'T'HH:mm") : null,
+            items: editLR.items?.length > 0 ? editLR.items : [{ item_name: '', unit: 'Kl', rate_type: 'Qty', qty: 0, weight: 0, rate: 0, actual_qty: '' }],
         } : {
             financial_year: '2025-2026',
             lr_date: format(new Date(), 'yyyy-MM-dd'),
             tax_paid_by: 'Transporter',
             receipt_type: 'Original',
             delay_hours: null,
-            items: [{ item_name: '', unit: 'Kl', rate_type: 'Qty', qty: 0, weight: 0, rate: 0 }],
+            items: [{ item_name: '', unit: 'Kl', rate_type: 'Qty', qty: 0, weight: 0, rate: 0, actual_qty: '' }],
         },
     });
 
-    const { fields, append, remove } = useFieldArray({
+    const { fields } = useFieldArray({
         control,
         name: 'items',
     });
@@ -382,25 +383,13 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
                         {/* Part 3 */}
                         <TabsContent value="part3" className="space-y-6">
                             <div className="flex justify-between items-center">
-                                <h3 className="text-lg font-semibold text-gray-700">Items & Measurements</h3>
-                                <Button type="button" size="sm" onClick={() => append({ item_name: '', unit: 'Kl', rate_type: 'Qty', qty: 0, weight: 0, rate: 0 })}>
-                                    <Plus className="h-4 w-4 mr-1" /> Add Item
-                                </Button>
+                                <h3 className="text-lg font-semibold text-gray-700">Item & Measurements</h3>
+                                <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">One item per LR</span>
                             </div>
 
                             <div className="space-y-4">
                                 {fields.map((field, index) => (
                                     <Card key={field.id} className="relative bg-gray-50/30">
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="absolute top-2 right-2 text-red-500 hover:bg-red-50"
-                                            onClick={() => remove(index)}
-                                            disabled={fields.length === 1}
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
                                         <CardContent className="pt-6">
                                             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                                                 <div className="md:col-span-2 space-y-2">
@@ -425,7 +414,7 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label>{watchedValues.items?.[index]?.rate_type === 'Qty' ? 'Quantity' : 'Weight'}</Label>
+                                                    <Label>{watchedValues.items?.[index]?.rate_type === 'Qty' ? 'Quantity (Billing)' : 'Weight'}</Label>
                                                     <Input
                                                         type="number"
                                                         {...register(watchedValues.items?.[index]?.rate_type === 'Qty' ? `items.${index}.qty` : `items.${index}.weight` as any)}
@@ -436,11 +425,22 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
                                                     <Input type="number" {...register(`items.${index}.rate` as const)} />
                                                 </div>
                                             </div>
-                                            <div className="mt-4 text-right text-sm">
-                                                <span className="text-gray-500">Net Amount:</span>
-                                                <span className="ml-2 font-bold font-mono">
-                                                    ₹{(((watchedValues.items?.[index]?.rate_type === 'Qty' ? watchedValues.items?.[index]?.qty : watchedValues.items?.[index]?.weight) || 0) * (watchedValues.items?.[index]?.rate || 0)).toLocaleString()}
-                                                </span>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                                <div className="space-y-2">
+                                                    <Label className="text-blue-700 font-semibold">Actual Quantity (User Defined - String)</Label>
+                                                    <Input
+                                                        type="text"
+                                                        placeholder="e.g. 10 Kl, 2 Loads, etc."
+                                                        {...register(`items.${index}.actual_qty` as const)}
+                                                    />
+                                                    <p className="text-xs text-gray-400">This will appear as 'Actual Quantity' in PI Industries invoice table.</p>
+                                                </div>
+                                                <div className="mt-6 text-right text-sm">
+                                                    <span className="text-gray-500">Net Amount:</span>
+                                                    <span className="ml-2 font-bold font-mono">
+                                                        ₹{(((watchedValues.items?.[index]?.rate_type === 'Qty' ? watchedValues.items?.[index]?.qty : watchedValues.items?.[index]?.weight) || 0) * (watchedValues.items?.[index]?.rate || 0)).toLocaleString()}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </CardContent>
                                     </Card>

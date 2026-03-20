@@ -40,8 +40,8 @@ class LrController extends Controller
             // Part 2
             'manifest_no' => 'nullable|string',
             'manifest_date' => 'nullable|date',
-            'inward_time' => 'nullable|date',
-            'outward_time' => 'nullable|date',
+            'inward_time' => 'nullable|string',
+            'outward_time' => 'nullable|string',
             'distance' => 'nullable|string',
             'delay_hours' => 'nullable|integer',
             'detention_rate' => 'nullable|numeric',
@@ -54,6 +54,7 @@ class LrController extends Controller
             'items.*.qty' => 'nullable|numeric',
             'items.*.weight' => 'nullable|numeric',
             'items.*.rate' => 'required|numeric',
+            'items.*.actual_qty' => 'nullable|string',
 
             // Part 4
             'gst_percent' => 'nullable|numeric',
@@ -74,15 +75,21 @@ class LrController extends Controller
 
                 // Calculations
                 if ($request->inward_time && $request->outward_time) {
-                    $in = Carbon::parse($request->inward_time);
-                    $out = Carbon::parse($request->outward_time);
-                    $diffDays = $in->diffInDays($out);
+                    try {
+                        $in = Carbon::parse($request->inward_time);
+                        $out = Carbon::parse($request->outward_time);
+                        $diffDays = $in->diffInDays($out);
 
-                    $delayDays = ($request->delay_hours ?: 0);
-                    $detentionDays = max(0, $diffDays - $delayDays);
+                        $delayDays = ($request->delay_hours ?: 0);
+                        $detentionDays = max(0, $diffDays - $delayDays);
 
-                    $data['detention_days'] = $detentionDays;
-                    $data['total_detention_amount'] = $detentionDays * ($request->detention_rate ?: 0);
+                        $data['inward_time'] = $in->format('Y-m-d H:i:s');
+                        $data['outward_time'] = $out->format('Y-m-d H:i:s');
+                        $data['detention_days'] = $detentionDays;
+                        $data['total_detention_amount'] = $detentionDays * ($request->detention_rate ?: 0);
+                    } catch (\Exception $e) {
+                        // If parsing fails, store as-is
+                    }
                 }
 
                 $lr = Lr::create($data);
@@ -178,6 +185,7 @@ class LrController extends Controller
             'items.*.qty' => 'nullable|numeric',
             'items.*.weight' => 'nullable|numeric',
             'items.*.rate' => 'required|numeric',
+            'items.*.actual_qty' => 'nullable|string',
 
             // Part 4
             'gst_percent' => 'nullable|numeric',
@@ -192,15 +200,21 @@ class LrController extends Controller
 
                 // Recalculate detention
                 if ($request->inward_time && $request->outward_time) {
-                    $in = Carbon::parse($request->inward_time);
-                    $out = Carbon::parse($request->outward_time);
-                    $diffDays = $in->diffInDays($out);
+                    try {
+                        $in = Carbon::parse($request->inward_time);
+                        $out = Carbon::parse($request->outward_time);
+                        $diffDays = $in->diffInDays($out);
 
-                    $delayDays = ($request->delay_hours ?: 0);
-                    $detentionDays = max(0, $diffDays - $delayDays);
+                        $delayDays = ($request->delay_hours ?: 0);
+                        $detentionDays = max(0, $diffDays - $delayDays);
 
-                    $data['detention_days'] = $detentionDays;
-                    $data['total_detention_amount'] = $detentionDays * ($request->detention_rate ?: 0);
+                        $data['inward_time'] = $in->format('Y-m-d H:i:s');
+                        $data['outward_time'] = $out->format('Y-m-d H:i:s');
+                        $data['detention_days'] = $detentionDays;
+                        $data['total_detention_amount'] = $detentionDays * ($request->detention_rate ?: 0);
+                    } catch (\Exception $e) {
+                        // If parsing fails, store as-is
+                    }
                 } else {
                     $data['detention_days'] = 0;
                     $data['total_detention_amount'] = 0;
@@ -255,6 +269,26 @@ class LrController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to update LR: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function destroy(Lr $lr)
+    {
+        try {
+            DB::transaction(function () use ($lr) {
+                // Delete related items and attachments first
+                $lr->items()->delete();
+                $lr->attachments()->delete();
+                ActivityLog::log('deleted', 'LR', $lr->id, "Deleted LR #{$lr->lr_no}", [
+                    'lr_no' => $lr->lr_no,
+                ]);
+                $lr->delete();
+            });
+            return response()->json(['message' => 'LR deleted successfully']);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete LR: ' . $e->getMessage(),
             ], 500);
         }
     }

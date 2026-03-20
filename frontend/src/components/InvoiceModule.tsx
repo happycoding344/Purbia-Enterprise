@@ -33,7 +33,7 @@ type BillingParty = { id: number; name: string };
 type LRRecord = {
     id: number; lr_no: string; lr_date: string; manifest_no: string;
     vehicle?: { registration_no: string };
-    items?: { qty: number; rate: number }[];
+    items?: { qty?: number; weight?: number; rate: number; actual_qty?: string }[];
     total_amount?: number;
     detention_days?: number;
     detention_rate?: number;
@@ -61,6 +61,8 @@ type PIInvoiceLineItem = {
     distance_range: string;
     qty_display: string; // Display value for user (now string)
     actual_qty: number; // Hidden - actual value for calculation
+    lr_actual_qty?: string; // User-defined string from LR items (for PI Actual Qty column)
+    detention_qty_display?: string; // Custom detention actual qty
     unit: string;
     rate: number;
     amount: number;
@@ -481,7 +483,8 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
             const detentionDays = lr.detention_days || calculateDetentionDays(lr.inward_time, lr.outward_time);
             
             // Auto populate logic
-            const actualQty = lr.items && lr.items.length > 0 ? lr.items.reduce((s, i) => s + (Number(lr.bill_by === 'Weight' ? i.weight : i.qty) || Number(i.qty) || Number(i.weight) || 0), 0) : 1;
+            // Auto populate logic - use qty if set, else weight
+            const actualQty = lr.items && lr.items.length > 0 ? lr.items.reduce((s, i) => s + (Number(i.qty) || Number(i.weight) || 0), 0) : 1;
             const rate = lr.items && lr.items.length > 0 ? Number(lr.items[0].rate) || 0 : 0;
             const detRate = Number(lr.detention_rate) || 0;
             const baseAmount = actualQty * rate;
@@ -497,6 +500,7 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                 distance_range: getDistanceRange(lr.distance || 0),
                 qty_display: String(actualQty),
                 actual_qty: actualQty,
+                lr_actual_qty: lr.items?.[0]?.actual_qty || '',
                 unit: 'Per trip',
                 rate: rate,
                 amount: baseAmount,

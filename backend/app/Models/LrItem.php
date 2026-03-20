@@ -18,6 +18,7 @@ class LrItem extends Model
         'weight',
         'rate',
         'net_amount',
+        'actual_qty',
     ];
 
     protected $casts = [
