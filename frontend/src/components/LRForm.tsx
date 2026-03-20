@@ -116,8 +116,8 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
 
     const itemsTotal = useMemo(() => {
         return watchedValues.items.reduce((acc, item) => {
-            const qty = item.rate_type === 'Qty' ? (item.qty || 0) : (item.weight || 0);
-            return acc + (qty * (item.rate || 0));
+            const qty = item.rate_type === 'Qty' ? Number(item.qty || 0) : Number(item.weight || 0);
+            return acc + (qty * Number(item.rate || 0));
         }, 0);
     }, [watchedValues.items]);
 
@@ -329,11 +329,11 @@ export function LRForm({ onSuccess, editLR }: LRFormProps) {
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Inward Date & Time</Label>
-                                    <Input type="datetime-local" {...register('inward_time')} />
+                                    <Input type="datetime-local" lang="en-GB" {...register('inward_time')} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Outward Date & Time</Label>
-                                    <Input type="datetime-local" {...register('outward_time')} />
+                                    <Input type="datetime-local" lang="en-GB" {...register('outward_time')} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Distance (kms)</Label>

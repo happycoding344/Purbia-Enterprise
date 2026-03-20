@@ -507,7 +507,7 @@ export default function InvoiceModule({ editInvoiceOverride, onSuccess }: { edit
                 detention_days: detentionDays,
                 detention_rate: detRate,
                 detention_amount: detAmount,
-                inward_time: (lr.inward_time && lr.outward_time) ? `${new Date(lr.inward_time).toLocaleDateString('en-IN', {day:'2-digit',month:'2-digit',year:'numeric'})} To ${new Date(lr.outward_time).toLocaleDateString('en-IN', {day:'2-digit',month:'2-digit',year:'numeric'})}` : (lr.inward_time ? lr.inward_time.split('T')[0] : ''),
+                inward_time: (lr.inward_time && lr.outward_time) ? `${new Date(lr.inward_time).toLocaleString('en-IN', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})} To ${new Date(lr.outward_time).toLocaleString('en-IN', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})}` : (lr.inward_time ? new Date(lr.inward_time).toLocaleString('en-IN', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}) : ''),
                 outward_time: '',
             };
         }).filter(Boolean) as PIInvoiceLineItem[];
